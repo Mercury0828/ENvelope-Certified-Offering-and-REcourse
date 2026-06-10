@@ -1,0 +1,25 @@
+# data is cached locally, never committed (guide.md Section 9)
+data/*
+!data/README.md
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# environments (user-local venv lives outside the repo, but guard anyway)
+encore-venv/
+.venv/
+venv/
+
+# editor / OS
+.vscode/
+.idea/
+Thumbs.db
+
+# NEVER commit license material (guide.md Section 12)
+*.lic
+gurobi.lic*

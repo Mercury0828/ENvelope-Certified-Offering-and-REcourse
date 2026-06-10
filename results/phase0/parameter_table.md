@@ -1,0 +1,37 @@
+# Plant parameter table (with source tags)
+
+| section         | parameter              |       value | source     | note                                                                          |
+|:----------------|:-----------------------|------------:|:-----------|:------------------------------------------------------------------------------|
+| reference       | P_IT_nominal_kW        | 1000        | [slides]   | [slides] 1 MW IT reference facility, direct-to-chip, chiller assist available |
+| thermal         | C_j_MJ_per_K           |    1        | [est]      | [est] silicon + cold plates, lumped; guide range 0.5-2 MJ/K                   |
+| thermal         | C_w_MJ_per_K           |   25        | [est]      | [est] coolant loop ~6 m3/MW water-equivalent; guide range 8-25 MJ/K           |
+| thermal         | C_f_MJ_per_K           |   60        | [est]      | [est] facility loop inventory ~14 m3/MW water-equivalent                      |
+| thermal         | C_tank_MJ_per_K        |   30        | [est]      | [est] S3 sensitivity-only buffer tank (~7 m3 water), added to C_f in S3       |
+| thermal         | h_jw_kW_per_K          |   40        | [est]      | [est] junction->coolant conductance (1 MW across ~25 K lumped gap)            |
+| thermal         | delta_hx_K             |    2        | [est]      | [est] CDU heat-exchanger approach temperature (T_in - T_f at duty)            |
+| coolant         | cp_J_per_kgK           | 3900        | [est]      | [est] PG25 (water/propylene-glycol 75/25)                                     |
+| coolant         | m_dot_nom_kg_s         |   14        | [est]      | [est] 1 MW / (cp * ~18.3 K design loop delta-T); chosen with C_w so           |
+| coolant         | m_dot_frac_min         |    0.3      | (untagged) | guide 6.1: m_dot/m_dot_nom in [0.3, 1.0]                                      |
+| limits          | T_max_C                |   85        | [est]      | [est] junction lumped proxy, guide 6.1 (symbolic T_max)                       |
+| limits          | delta_cond_K           |    2        | [est]      | [est] condensation margin, guide 6.1                                          |
+| limits          | T_in_min_C             |   18        | (untagged) | guide 6.1                                                                     |
+| limits          | T_in_max_C             |   45        | (untagged) | guide 6.1                                                                     |
+| limits          | T_f_max_C              |   35        | [est]      | [est] facility-loop water upper limit                                         |
+| limits          | q_ext_ramp_kW_per_min  |  200        | [est]      | [est] heat-extraction ramp limit (D-011)                                      |
+| limits          | q_rej_max_kW           | 1300        | [est]      | [est] heat-rejection equipment headroom (1.3x IT nominal)                     |
+| operating_point | T_in_nom_C             |   25        | [slides]   | [slides] W32-class warm-water supply temperature                              |
+| operating_point | Q_IT_nom_kW            | 1000        | [slides]   | [slides]                                                                      |
+| power_map       | pump_a_p_W_per_kgps3   |    9.111    | [est]      | [est] a_p so that P_pump(m_dot_nom) ~ 25 kW (~2.5% of IT)                     |
+| power_map       | pump_pwa_n_segments    |    3        | (untagged) | guide 6.1: 3-segment piecewise-affine approx of a_p*m^3                       |
+| power_map       | cop_c0                 |    1.40276  | [fit]      | [fit] phase0 supply-sweep calibration (D-014); test-guarded                   |
+| power_map       | cop_c1_per_K           |    0.798621 | [fit]      | [fit] phase0 supply-sweep calibration (D-014); test-guarded                   |
+| power_map       | cop_min                |    2        | [est]      | [est] clamp                                                                   |
+| power_map       | cop_max                |   12        | [est]      | [est] clamp                                                                   |
+| power_map       | T_wb_calib_C           |   15        | [est]      | [est] wet bulb assumed for the [Gheni26] calibration scenario                 |
+| power_map       | T_supply_lo_C          |   17        | [Gheni26]  | [Gheni26]                                                                     |
+| power_map       | T_supply_hi_C          |   25        | [Gheni26]  | [Gheni26]                                                                     |
+| power_map       | power_reduction_target |    0.633    | [Gheni26]  | [Gheni26] ~63.3% cooling-power cut for 17->25 C supply sweep                  |
+| power_map       | cop_at_lo_anchor       |    3        | [est]      | [est] effective COP anchor at the low-supply end (pins the fit)               |
+| step_response   | k_rej_kW_per_K         |   30        | [est]      | [est] facility heat-rejection proportional gain (chiller law)                 |
+| discretization  | dt_sim_s               |   30        | (untagged) | guide 5.1: plant simulated at 30-60 s                                         |
+| discretization  | dt_ctrl_s              |  300        | (untagged) | guide 5.1: control interval 5 min                                             |

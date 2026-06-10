@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "encore"
+version = "0.1.0"
+description = "ENCORE: Envelope-Certified Offering and Recourse - certified cooling-side flexibility for liquid-cooled AI data centers"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "pyyaml",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

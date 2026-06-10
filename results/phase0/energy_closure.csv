@@ -1,0 +1,5 @@
+model,step,energy_closure_frac
+2-state,QIT+10%,6.246446359037149e-16
+2-state,Tin-2K,8.36120711432563e-16
+3-state,QIT+10%,1.3170218226885555e-16
+3-state,Tin-2K,7.243620024787055e-17

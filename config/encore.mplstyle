@@ -1,0 +1,21 @@
+# ENCORE shared matplotlib style (guide.md Section 12: one shared mplstyle,
+# labeled axes with units, publication-leaning defaults)
+figure.figsize: 6.4, 4.0
+figure.dpi: 130
+savefig.dpi: 300
+savefig.bbox: tight
+font.size: 10
+font.family: serif
+axes.grid: True
+grid.alpha: 0.3
+grid.linewidth: 0.5
+axes.spines.top: False
+axes.spines.right: False
+axes.labelsize: 10
+axes.titlesize: 11
+legend.fontsize: 8
+legend.framealpha: 0.9
+lines.linewidth: 1.6
+lines.markersize: 4.5
+xtick.labelsize: 9
+ytick.labelsize: 9
