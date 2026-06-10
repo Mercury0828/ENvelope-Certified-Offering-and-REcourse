@@ -196,3 +196,22 @@ T_j ≈ 68.3 °C (hotspot headroom 16.7 K).
 **Rationale.** C_w is already capped at the guide's range top, so flow is the remaining
 free calibration knob; a higher design ΔT is plausible for warm-water direct-to-chip
 and is tagged [est] for Phase-0-style recalibration when real plant data exists.
+
+## 2026-06-10 — D-017: skill_js repo verified and adopted (supersedes D-001's refusal, not its caution)
+
+**Question.** D-001 declined to download `github.com/Mercury0828/skill_js` during the
+autonomous run. The owner then explicitly instructed: pull it and use it.
+
+**Decision.** Cloned (on explicit owner instruction) to `~/.encore-vendor/skill_js`
+(outside the project repo) and inspected before use. Verified contents: it is the
+owner's own research-methodology startup package (START_HERE, RESEARCH_PROTOCOL with
+Jason's standing directives, skills 01–09, templates) — documentation only, no
+executable code. Adopted as a methodology reference. Where its standing directives and
+guide.md conflict, **guide.md wins** (per the package's own rule): in particular the
+"auto-continue phases" directive does NOT override guide §11's hard stops at gates #1
+and #2; it applies to Phases 3→6.
+
+**Follow-ups it imposes:** (a) ENCORE has no GitHub remote yet — wire and push at
+milestones once the owner provides the URL; (b) distill generalizable ENCORE lessons
+back into skill_js as they arise; (c) tag phase completions (`phase0-done`,
+`phase1-done` to be added).
