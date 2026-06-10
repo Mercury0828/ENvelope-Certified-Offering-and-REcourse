@@ -1,0 +1,16 @@
+{
+  "n_layer_A": 1200,
+  "agreement_A": 1.0,
+  "n_layer_B": 1200,
+  "agreement_B": 0.99,
+  "anti_conservative_B": 0,
+  "n_total_membership_points": 2400,
+  "agreement_total": 0.995,
+  "n_resim_2state": 200,
+  "worst_excursion_2state_K": 0.36197787232882206,
+  "n_resim_3state": 200,
+  "worst_excursion_3state_K": 0.3919530095364081,
+  "tab_cells": 1500,
+  "tab_empty_cells": 526,
+  "tab_build_seconds": 5.235926399999698
+}

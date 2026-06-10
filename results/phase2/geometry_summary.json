@@ -1,0 +1,29 @@
+{
+  "readiness": {
+    "q50": {
+      "iters": 2,
+      "converged": true,
+      "gaps_K": [
+        10.908215143449723,
+        0.0
+      ],
+      "area_K2": 2113.22070149395,
+      "nominal_ready": true
+    },
+    "q65": {
+      "iters": 2,
+      "converged": true,
+      "gaps_K": [
+        14.990971190736182,
+        5.860602740881404e-07
+      ],
+      "area_K2": 1867.070091182596,
+      "nominal_ready": true
+    }
+  },
+  "vb_worst_rel_err_d_ge_15": 0.02670940170940149,
+  "vb_median_rel_err_d_ge_15": 0.0089031339031318,
+  "E_cap_dry_kWh": 45.03165426314043,
+  "E_cap_humid_kWh": 33.624006616523666,
+  "alpha_hold_W_per_K": 55346.33104537323
+}

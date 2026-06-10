@@ -27,8 +27,25 @@ phase1:
   gate_verdict: GO            # S2 sustains 53.1-59.3% of P_base at d=30 (bar: 15-20%)
   recommended_d_star_min: 30
   recommended_q_range_pct_of_base: [15, 40]
-next_phase: 2                 # envelope geometry — DO NOT START until owner confirms gate
-status: STOPPED_AT_GATE_1     # per guide Section 11, awaiting owner decision
+gate1_owner_decision: GO      # confirmed by owner 2026-06-10 ("Gate1 确定。启动Phase 2")
+phase2:
+  status: complete            # memo written, verdict GO (geometric route)
+  completed_steps:
+    - lifted_deliverability   # reachability.py: Gz<=h in (x0, q, u), hour horizon
+    - geometry                # F(x,c) LP, exact Bretl-Lall slices, TabulatedEnvelope
+    - readiness_fixed_point   # 2-iter convergence at q in {50, 65} kW, d=30
+    - virtual_battery         # closed forms; median 0.9% / worst 2.7% vs LP
+    - cross_validation        # 2,400 pts: layer A 100.00%, layer B 99.00%, 0 anti-conservative
+    - envelope_memo           # results/phase2/ENVELOPE_MEMO.md — R1 VERDICT: GO
+    - walkthrough_artifact    # WALKTHROUGH.md + zip prepared; tag phase2-done after owner GO
+    - self_audit
+  gate_verdict: GO            # geometric route adopted; ML-surrogate fallback retired
+next_phase: 3                 # tightening + fallback — DO NOT START until owner confirms gate 2
+status: STOPPED_AT_GATE_2     # per guide Section 11, awaiting owner decision
+owner_todo:
+  - provide GitHub remote URL for ENCORE (no remote configured; gh CLI absent)
+  - confirm gate 2 (R1: geometric route GO)
+  - data list for Phase 3 will be generated on gate-2 GO (ERCOT, KIAH, GPU traces)
 ```
 
 ## Narrative log
@@ -43,3 +60,10 @@ status: STOPPED_AT_GATE_1     # per guide Section 11, awaiting owner decision
   cooling power for 30 min (gate bar 15–20%). **GATE #1 VERDICT: GO.** Recommended
   product: d* = 30 min, q ∈ 15–40% of baseline cooling power. Run stopped at the gate
   per guide §11 — Phase 2 not started.
+- **2026-06-10** Owner confirmed Gate #1 GO; skill_js verified as owner's methodology
+  package and adopted (D-017). Phase 2 executed: lifted deliverability polyhedron,
+  exact slice projections + tabulated runtime envelope, readiness fixed point, VB
+  closed forms. Cross-validation 2,400 pts (100.00% exact-layer, 99.5% overall, zero
+  anti-conservative); VB within 2.7% of LP; envelope-vs-dewpoint monotone (weather
+  coupling lives in the pre-cool/ready state and E_cap). **GATE #2 (R1) VERDICT: GO —
+  geometric route adopted.** Stopped at gate 2; Phase 3 not started.

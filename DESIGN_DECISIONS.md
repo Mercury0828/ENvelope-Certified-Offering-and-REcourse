@@ -215,3 +215,57 @@ and #2; it applies to Phases 3→6.
 milestones once the owner provides the URL; (b) distill generalizable ENCORE lessons
 back into skill_js as they arise; (c) tag phase completions (`phase0-done`,
 `phase1-done` to be added).
+
+## 2026-06-10 — D-018: Geometric-route division of labor (Phase 2)
+
+**Decision.** The exact-projection + tabulation pipeline (the R1 "polytope route") is
+demonstrated and cross-validated on the **2-state** envelope (guide's default, D-013):
+fixed-q slices are exact 2-D polygons, tabulated over (d, T_dew, q). The **3-state**
+product envelope uses the *same lifted polyhedron* via direct LP queries (F, membership,
+trajectories) and will be embedded un-projected as constraints inside the D-1 offering
+problem (Phase 4) — projection of the 4-D (x, q) set is unnecessary for any downstream
+consumer. **Rationale.** Exactness where the theory lives, zero approximation where the
+optimizer lives; avoids 3-state vertex-enumeration cost with no loss.
+
+## 2026-06-10 — D-019: Delivery constraint form in the envelope
+
+**Decision.** Cumulative over the activation window: Σ_{t∈A}(P̄−P_t)Δt ≥ r q ΔH
+(guide 6.3 "along the activation profile"). Conservative vs settlement's whole-hour sum
+(5.3); the Phase-1 "sustained" form is kept as a flag and shown to lower-bound the
+cumulative envelope (test).
+
+## 2026-06-10 — D-020: Activation profile
+
+**Decision.** Activation occupies the first round(r·12) steps of the hour, r = d/60 by
+default (the product's maximal activation). Other placements/r values are a spec field,
+not enumerated in Phase 2.
+
+## 2026-06-10 — D-021: Envelope domain and first-step ramp
+
+**Decision.** The envelope is defined inside an explicit operating box (DOE-style
+domain); x₀ need not be a steady state, so the pre-event→first-step ramp link is
+dropped (inter-step ramps kept). Absolute input guards keep slices bounded for the
+projection algorithm.
+
+## 2026-06-10 — D-022: Polytope library choice (guide §12 "pick in Phase 0/2, log it")
+
+**Decision.** pypoman's Bretl–Lall `project_polytope` for exact 2-D slices (with a
+dummy-equality workaround for its eq-required assertion); scipy ConvexHull for
+H-reps/areas; pycddlib (block/Fourier elimination) verified available as backup; the
+`polytope` package is unused. **Rationale.** Bretl–Lall scales with output complexity
+(8-vertex polygons in ~0.2 s) rather than the 14-D lifted dimension.
+
+## 2026-06-10 — D-023: Cross-validation design (Phase 2 acceptance)
+
+**Decision.** Three layers: (A) on-grid polygon membership vs feasibility LP — tests
+projection exactness, must be ~100%; (B) continuum samples vs the conservatively
+snapped tabulated object — quantifies designed conservatism, must be ≥98% with ZERO
+anti-conservative errors; (C) re-simulation of LP-optimal trajectories at 30 s — the
+non-circular physics check. Knife-edge points (<1e-3 K from a facet) excluded from A as
+floating-point tie-breaks.
+
+## 2026-06-10 — D-024: Intra-step excursion margin
+
+**Finding/decision.** Enforcing constraints at 5-min marks admits ≤ +0.4 K intra-step
+T_j excursions (layer C). Fold a 0.5 K state-constraint margin into the Phase-3 tube
+tightening rather than densifying the control grid. Parked in PARKING_LOT for Phase 3.

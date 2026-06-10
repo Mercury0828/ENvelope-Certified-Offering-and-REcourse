@@ -21,3 +21,11 @@ rationale, and stays out of the code.
   and anti-short-cycle timers; ignored in V1 plant model (would add integer variables).
 - **Buffer-tank sizing optimization (S3).** S3 is sensitivity-only per guide Line-C
   caution; do not let tank sizing become a design variable.
+- **Intra-step constraint margin (D-024).** ≤ +0.4 K T_j excursion between 5-min marks;
+  absorb as a 0.5 K margin in Phase-3 tube tightening (do not densify the control grid).
+- **Pre-cool holding cost in the offering objective.** α ≈ 55 kW per K of pre-cool at
+  the nominal point (affine-COP slope); first-order for Phase-4 economics.
+- **Readiness at deep commitments / short recovery.** 2-iteration convergence observed
+  at q ∈ {50, 65} kW, d=30; stress at higher q and consecutive activations in Phase 3.
+- **Exact 3-state (x, q) projection.** Unneeded for D-1 (lifted embedding, D-018); only
+  revisit if a 3-state *certificate artifact* (printable H-rep) is ever required.
