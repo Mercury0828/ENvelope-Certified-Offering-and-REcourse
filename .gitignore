@@ -23,3 +23,6 @@ Thumbs.db
 # NEVER commit license material (guide.md Section 12)
 *.lic
 gurobi.lic*
+
+# showable-artifact bundles (regenerable)
+artifacts/
