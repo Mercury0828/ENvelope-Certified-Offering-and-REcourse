@@ -1,0 +1,33 @@
+{
+  "timestamp_utc": "2026-06-10T22:57:53.188456+00:00",
+  "git_hash": "14b573ee52af094236cfcbf1acfdab06084e0d4b",
+  "config_path": "E:\\Project-git\\ENvelope-Certified Offering and REcourse\\config\\plant.yaml",
+  "config_sha256": "ee76c5a5f4768b5cc993f92f6b8216dfb1df31c2bc2cf7b2662386fc6cb1bbb3",
+  "seed": 20260610,
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "numpy": "2.4.6",
+  "scipy": "1.17.1",
+  "experiment": "phase1_duration",
+  "T_wb": 22.0,
+  "T_dew": {
+    "dry": 15.0,
+    "humid": 22.0
+  },
+  "durations_min": [
+    5,
+    10,
+    15,
+    20,
+    30,
+    45,
+    60
+  ],
+  "bisection_tol_W": 20.0,
+  "acceptance": {
+    "monotone": true,
+    "precool_dominates": true,
+    "humid_inside_dry": true,
+    "burst_inside_nominal": true
+  }
+}

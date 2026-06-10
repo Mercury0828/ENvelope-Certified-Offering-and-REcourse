@@ -1,0 +1,18 @@
+{
+  "P_base_kW": 288.2539912296177,
+  "P_pump_kW": 25.000584000000003,
+  "cop_ref": 3.7986213,
+  "q30_S1_nominal_dry_pct": 22.30775245324636,
+  "q30_S1_precooled_dry_pct": 31.666752045700296,
+  "q30_S2_nominal_dry_pct": 59.33126364626542,
+  "q30_S2_precooled_dry_pct": 89.98909435412524,
+  "q30_S2_worst_pct_burst_humid_nominalstart": 53.1105110880888,
+  "q30_S1_nominal_dry_kW": 64.3029868001056,
+  "q30_S2_nominal_dry_kW": 171.0247355073273,
+  "precool_value_S1_d30_pct_pts": 9.358999592453937,
+  "precool_value_S1_d30_humid_pct_pts": 1.332222098032453,
+  "humid_shrink_S1_precooled_d30_pct_pts": 8.026777494421484,
+  "gate_rule": "GO if S2 sustains >=15-20% of baseline cooling power for d=30 min",
+  "gate_case": "S2, burst workload, nominal start, humid (most conservative standard case)",
+  "gate_verdict": "GO"
+}

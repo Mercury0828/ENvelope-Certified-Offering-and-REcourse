@@ -18,11 +18,17 @@ phase0:
     - supply_sweep_experiment
     - self_audit
 phase1:
-  status: in_progress
+  status: complete            # gate memo written, verdict GO
   completed_steps:
     - duration_lp             # src/encore/envelope/duration.py + smoke tests
-  next_step: run experiments/phase1_duration.py full grid, write DURATION_MEMO.md + SELF_AUDIT.md
-gate: phase1 is GO/NO-GO gate #1 — STOP after DURATION_MEMO.md
+    - full_grid_experiment    # 168 bisections, all acceptance assertions pass
+    - duration_memo           # results/phase1/DURATION_MEMO.md — VERDICT: GO
+    - self_audit
+  gate_verdict: GO            # S2 sustains 53.1-59.3% of P_base at d=30 (bar: 15-20%)
+  recommended_d_star_min: 30
+  recommended_q_range_pct_of_base: [15, 40]
+next_phase: 2                 # envelope geometry — DO NOT START until owner confirms gate
+status: STOPPED_AT_GATE_1     # per guide Section 11, awaiting owner decision
 ```
 
 ## Narrative log
@@ -31,6 +37,9 @@ gate: phase1 is GO/NO-GO gate #1 — STOP after DURATION_MEMO.md
   was a placeholder). All acceptance criteria pass; see `results/phase0/SELF_AUDIT.md`.
   Key calibration: ṁ_nom = 14 kg/s, C_w = 25 MJ/K → loop τ 5.3–8.0 min, facility τ
   50.5 min, junction 24 s; Gheni 17→25 °C sweep −63.3%. Decisions D-001..D-016 logged.
-- **2026-06-10** Phase 1 started: duration-accounting LP implemented with conservative
-  affine power surrogate (D-006), bisection on q per (scenario × workload × init ×
-  weather × duration).
+- **2026-06-10** Phase 1 complete. q–d frontier over the full grid; all programmatic
+  assertions (monotone, pre-cool dominance, humid ⊆ dry) pass. S1 matches the
+  ~30%/~20 min literature anchor (33.7% @ 20 min); S2 sustains 53–59% of baseline
+  cooling power for 30 min (gate bar 15–20%). **GATE #1 VERDICT: GO.** Recommended
+  product: d* = 30 min, q ∈ 15–40% of baseline cooling power. Run stopped at the gate
+  per guide §11 — Phase 2 not started.
