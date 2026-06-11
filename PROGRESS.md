@@ -68,8 +68,20 @@ phase4:
     humid_day: B4 sits out (phase-3 finding holds end-to-end); B2 T_j 89.0 C
     negative_result: ready-box terminal collapses F-tilde to 0 (D-041) -> readiness SET wiring is Phase-5 work
 phase5:
+  status: complete            # all acceptance pass; SELF_AUDIT + artifact #2
+  completed_steps:
+    - portfolio_baselines     # B5 battery + B6 curtailment (config/market.yaml)
+    - real_residual_records   # W(c) refit on 743 real records (D-042)
+    - readiness_terminal_wiring  # R(q) polygon in committed plans (D-041 resolved)
+    - three_week_runs         # mild/humid/scarcity x 7d x 6 ctrl x 3 seeds
+  key_results:
+    B4: zero violations in 189 days; +$24.6/day scarcity week; sits out mild/humid (rational)
+    B2: 18 violation-days, worst +8.74 K — buys revenue with chip damage
+    F2_shape: B2 alone on violation axis; B6 > B5 > B3 > B4 in $ at zero violations
+  caveat: Borg cell volatile at hall scale + hour-of-day-only context -> small B4 $; Phase-6 levers listed in SELF_AUDIT
+phase6:
   status: not_started
-  next_step: B5/B6 baselines, readiness-polygon terminal wiring, trace-residual W(c) refit + alignment, 3 representative weeks, 20+ seeds smoke
+  next_step: F1-F3 final figures + main table, 20+ seeds, context enrichment (recent-residual regime), eps/c_deg/gamma sweeps, make-figures reproducibility, provenance manifest
 remote: https://github.com/Mercury0828/ENvelope-Certified-Offering-and-REcourse (main; push at milestones)
 skill_js: lessons pushed (29c93a4)
 owner_todo:
@@ -113,3 +125,9 @@ owner_todo:
   dry day, sits out the humid day; B2 buys profit with T_j violations on both days.
   D-035..D-041 logged (incl. the settlement edge case and the terminal-box negative
   result). Phase 5 next (no gate).
+- **2026-06-10** Phase 5 complete. B5/B6 baselines; W(c) refit on real trace/weather
+  residuals (D-042: double-scaling caught, NWP-skill dew model, climatology heat
+  forecast); readiness R(q) terminal wired into commitments (D-041 resolved). 3 real
+  weeks × 6 controllers × 3 seeds: B4 zero violations in 189 days with +$24.6/day in
+  the scarcity week; B2 18 violation-days (worst +8.7 K); proto-F2 produced. All
+  acceptance assertions pass; artifact #2 zipped; tagged phase5-done. Phase 6 next.

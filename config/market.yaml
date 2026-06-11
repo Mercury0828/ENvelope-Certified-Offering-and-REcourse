@@ -1,0 +1,21 @@
+# ENCORE market & baseline-portfolio parameters (guide 5.2/5.3, 7, 8)
+# Source tags as in plant.yaml. Swept values noted; defaults here.
+
+product:
+  d_min: 30                  # gate-1 recommendation (results/phase1/DURATION_MEMO.md)
+  p_act: 0.15                # [est] hourly activation probability (D-038)
+  gamma_mult: 2.0            # guide 5.3 default penalty = 2x pi_cap; sens {1.5, 3}
+  c_deg_per_Kh: 2.0          # [est] degradation proxy $/K-h above T_thr (C3-iii sweeps)
+  T_thr_C: 70.0              # [est]
+
+battery_B5:                  # ideal energy/power-limited storage (guide 7: simple model)
+  P_max_kW: 50.0             # [est] sized to the certified-offer scale (matched band)
+  E_kWh: 25.0                # [est] 30-min battery at rated power
+  eta_rt: 0.90               # [est] round-trip efficiency
+  capex_usd_per_kWh: 400.0   # [est]
+  capex_usd_per_kW: 300.0    # [est]
+  annualization_frac: 0.12   # [est] CRF-ish (10 yr, ~7%)
+
+workload_B6:                 # capped curtailment, linear opportunity cost (guide 7)
+  kappa_max: 0.10            # [est] curtailable fraction of IT power
+  c_opp_usd_per_MWh: 150.0   # [est] opportunity cost of curtailed IT energy

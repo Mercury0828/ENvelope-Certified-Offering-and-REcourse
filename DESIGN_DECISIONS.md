@@ -432,3 +432,27 @@ defines readiness as a SET (Phase-2's R(q) is far larger than the ready box). V1
 without terminal constraints + explicit infeasible-start fallback and counting; wiring
 the true readiness polygon into committed plans is Phase-5 work. The negative result is
 paper-worthy (ad-hoc terminal penalties vs readiness sets).
+**Phase-5 resolution:** committed certified plans now carry the R(q) polygon terminal
+(cached `readiness_iteration` per (T_dew, d, q-bucket) in `offering.py`), with tube
+margins on the terminal rows. Infeasible starts dropped to ~0.4/day under p_act = 0.15
+and were absorbed by the D-1-plan fallback with zero B4 violations across all weeks.
+
+## 2026-06-10 — D-042: Real-residual conventions for W(c) (Phase 5)
+
+**Heat channel.** Forecast = 31-day hour-of-day climatology of the trace hall profile —
+the best of the simple candidates measured (step-residual std 73 kW vs 102 kW for
+lag-day persistence); residuals enter UNscaled (the affine power map already produced
+hall watts; an earlier draft re-scaled by nominal/mean ≈ 1.35 and double-counted —
+caught and removed). The Borg cell is genuinely volatile at hall scale (~±25%/h):
+certified offers on it are small and concentrated in low-volatility daytime hours,
+which is reported as a property of the workload, not hidden.
+
+**Dew channel.** Day-ahead residuals modeled as N(0, 1.2 K [est, literature NWP
+day-ahead dew RMSE]), clipped ±4 K. Measured 24-h persistence residuals (std 5.1 K)
+are a strawman forecaster that would triple the bound and indict the product for the
+forecaster's sins; they remain available for sensitivity work.
+
+**Pairing.** Heat (trace) and dew (weather/NWP-model) channels are independent sources
+joined per record; replayed simulation hours use REAL trace step-vectors + drawn dew
+residuals. Trace clock is not wall-aligned to prices: hour-of-day is the only shared
+coordinate (alignment caveat carried from data/README.md).

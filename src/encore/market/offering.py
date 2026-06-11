@@ -25,8 +25,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from dataclasses import replace as dc_replace
+
 from ..control.fallback import certified_max_q
-from ..envelope.geometry import extract_trajectory, max_q
+from ..envelope.geometry import extract_trajectory, max_q, poly_halfspaces
+from ..envelope.readiness import readiness_iteration
 from ..envelope.reachability import EnvelopeSpec, activation_steps, build_lifted
 from ..plant.dynamics import steady_state
 from ..plant.params import PlantParams
@@ -35,6 +38,21 @@ from ..tighten.quantile_boxes import Box
 from ..tighten.tube import build_tube
 
 J_PER_MWH = 3.6e9
+_READINESS_CACHE: dict = {}
+
+
+def _readiness_terminal(p: PlantParams, spec: EnvelopeSpec, q: float):
+    """R(q) polygon H-rep for the committed offer (cached; D-041 resolution).
+
+    Computed on the nominal envelope (readiness is a geometric object of the plant);
+    robustness enters via the terminal-row tube margins in build_lifted.
+    """
+    key = (round(spec.T_dew, 1), spec.d_min, round(q / 5e3))
+    if key not in _READINESS_CACHE:
+        out = readiness_iteration(p, dc_replace(spec, terminal=None), q=q,
+                                  max_iter=6, tol_K=0.2)
+        _READINESS_CACHE[key] = poly_halfspaces(out["fixed_point"])
+    return _READINESS_CACHE[key]
 
 
 @dataclass
@@ -81,7 +99,8 @@ def degradation_usd(p: PlantParams, spec: EnvelopeSpec, tube, x_ready, q: float,
 
 def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=None,
                 d_min: float = 30.0, p_act: float = 0.15, c_deg_per_Kh: float = 2.0,
-                T_thr: float = 70.0, n_grid: int = 15) -> list[HourPlan]:
+                T_thr: float = 70.0, n_grid: int = 15,
+                readiness: bool = False) -> list[HourPlan]:
     """One HourPlan per hour. contexts[h]: T_dew_fc, T_wb, pi_cap ($/MWh),
     pi_rt_event, pi_rt_recovery ($/MWh)."""
     plans = []
@@ -108,6 +127,19 @@ def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=N
                          - p_act * (r_act * q * 3600.0 * shift + deg))
                 if value > best_v:
                     best_q, best_v = float(q), float(value)
+        # readiness terminal (D-041 resolution): commit only what is deliverable AND
+        # leaves the plant inside R(q) for the next hour's obligation
+        if readiness and best_q > 0:
+            term = _readiness_terminal(p, spec, best_q)
+            if term is not None:
+                spec = dc_replace(spec, terminal=term)
+                F_term = max(certified_max_q(p, spec, tube, x_ready)
+                             if tube is not None else max_q(build_lifted(p, spec), x_ready),
+                             0.0)
+                if best_q > F_term:
+                    best_q = max(F_term - 100.0, 0.0)
+                F = min(F, F_term) if F_term > 0 else F
+
         # the envelope constraint, by construction and re-asserted:
         assert best_q <= F + 1e-6, "offer exceeds its envelope — construction broken"
         plans.append(HourPlan(hour=h, q_W=best_q, F_W=F, spec=spec, tube=tube,
