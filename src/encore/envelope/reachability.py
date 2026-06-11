@@ -220,14 +220,23 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec, tube=None) -> Lifted:
             r_ = np.zeros(nz); r_[rej_col(t)] = 1.0; r_[iq] = cop_ref
             add(r_, cop_ref * chiller_share - tube.u_margin(t))
     elif spec.delivery == "cumulative":
-        # sum_{t<m_act} (P_base - P_t) dt >= r q DH, P_t = P_pump + q_rej,t/cop_ref
+        # Product semantics (D-048), BOTH required:
+        # (i) depth during the activation window: P_t <= P_base - q for t < m_act
+        #     (the physical DR promise "reduce by q for up to d minutes");
+        # (ii) settlement energy over the WHOLE hour: sum_{t in T(h)} (P_base - P_t) dt
+        #     >= r q DH (guide 5.3 sums the full hour — certifying the window alone is
+        #     ANTI-conservative once in-hour recovery is possible: recovery's negative
+        #     delivered cancels the window's positive delivered).
+        for t in range(m_act):
+            r_ = np.zeros(nz); r_[rej_col(t)] = 1.0; r_[iq] = cop_ref
+            add(r_, cop_ref * chiller_share - tube.u_margin(t))
         r_ = np.zeros(nz)
         delivery_margin = 0.0
-        for t in range(m_act):
+        for t in range(N):
             r_[rej_col(t)] = dt / cop_ref
             delivery_margin += (dt / cop_ref) * tube.u_margin(t)
         r_[iq] = m_act * dt          # r*DH = m_act*dt by construction of m_act
-        add(r_, m_act * dt * chiller_share - delivery_margin)
+        add(r_, N * dt * chiller_share - delivery_margin)
     else:
         raise ValueError(spec.delivery)
 

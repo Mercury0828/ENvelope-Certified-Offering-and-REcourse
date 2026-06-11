@@ -87,14 +87,18 @@ def test_vb_closed_form_tracks_lp(p, x0):
         assert q_vb == pytest.approx(F, rel=0.10)
 
 
-def test_readiness_iteration_shrinks_and_converges(p):
+def test_readiness_one_step_nonempty_fixed_point_empty(p):
+    """D-048: the STARTABLE set R1 is a healthy polygon, but the infinite-horizon
+    fixed point is EMPTY under whole-hour settlement (consecutive full-depth delivery
+    is thermodynamically impossible) — which is why commitments are adjacency-pruned."""
+    from encore.envelope.geometry import poly_area, poly_halfspaces as hsf
     spec = EnvelopeSpec(n_states=2, T_dew=15.0, d_min=30.0)
-    out = readiness_iteration(p, spec, q=50e3, max_iter=10, tol_K=0.05)
-    assert out["converged"]
-    # monotone: each iterate inside its predecessor (up to numerical slack)
-    from encore.envelope.geometry import poly_halfspaces as hsf
-    for prev, cur in zip(out["polygons"][:-1], out["polygons"][1:]):
-        hs = hsf(prev)
-        assert hs is not None
-        A, b = hs
-        assert (A @ cur.T - b[:, None]).max() < 0.05
+    one = readiness_iteration(p, spec, q=50e3, max_iter=1, tol_K=0.05)
+    R1 = one["fixed_point"]
+    assert R1.shape[0] >= 3 and poly_area(R1) > 100.0      # startable set is large
+    # monotone: R1 inside R0 (the safety box)
+    hs = hsf(one["polygons"][0])
+    A, b = hs
+    assert (A @ R1.T - b[:, None]).max() < 0.05
+    deep = readiness_iteration(p, spec, q=50e3, max_iter=10, tol_K=0.05)
+    assert not deep["converged"] and deep["fixed_point"].shape[0] == 0

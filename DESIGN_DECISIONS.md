@@ -494,3 +494,75 @@ plan). B1 therefore never pre-cools (its q ≡ 0), restoring baseline semantics,
 tail-burst headroom is ~16.7 K again. The F2 acceptance assertion is "B4 never worse
 than idle B1, and within the 0.5 K intra-step tolerance (D-024)" — out-of-box workload
 tails that overwhelm even a non-participating plant are outside any certificate's scope.
+
+## 2026-06-10 — D-046: Pre-paper audit fixes (clean-context review + numeric cross-checks)
+
+An adversarial clean-context review before paper drafting surfaced, and this batch
+fixes, the following (all confirmed against source before fixing):
+
+1. **State teleportation at hour boundaries (critical).** `simulate_policy` always
+   started at the certificate's nominal x₀; idle hours therefore reset the plant to
+   their target steady state and infeasible event starts were granted the ready state
+   for free — event heat vanished at hour boundaries, recovery energy was never paid
+   (the negative `rebound_usd` artifact), and feedback "absorbing" warm starts was
+   never actually exercised. Fix: `simulate_policy(..., x0=carried_state)` everywhere
+   in `run_day`; closed-loop trajectories are now continuous and recovery/pre-cool
+   transients are physically simulated and paid.
+2. **Cross-process non-reproducibility.** Experiment seeds used Python's salted
+   `hash((date, seed))` — every week/stress run differed between processes, which is
+   also why a self-audit quoted stress numbers its committed artifacts didn't contain.
+   Fix: `utils.stats.stable_seed` (CRC32). All affected experiments rerun; memos
+   regenerated from artifacts only.
+3. **In-sample certificate validation + forecast look-ahead.** W(c) was fit and
+   evaluated on the same trace hours, and the climatology forecast averaged over the
+   full trace (each hour partially forecasting itself). Fix: causal climatology (days
+   0–20 only) and a strict day-block split — `RealRecordPool(role="fit")` (days 0–20)
+   for calibration/offering, `role="eval"` (days 21–30) for closed-loop replay.
+4. **Wrong "binomial CI" and a vacuous acceptance assertion.** Replaced by exact
+   Clopper–Pearson (`utils.stats.clopper_pearson`) in Phase-3 and Phase-6 outputs;
+   the certificate-validity gate now asserts the point rate ≤ ε and that the CP lower
+   bound does not reject the Thm-2 claim.
+5. **MPC delivery ledger uses planned (pre-clip) input** — accepted as a documented
+   approximation (settlement uses realized power; only internal steering drifts);
+   noted in `mpc.py`.
+
+Accepted-with-statement (not code changes; carried to the paper): the tube certificate
+assumes e₀ = 0 at the committed ready state — warm event starts (~0.4/day) are outside
+it and covered empirically (now genuinely, per fix 1); the certified closed-loop product
+is the 2-state coolant-loop tranche (D-027), while the S2 gate numbers are deterministic
+capability — the paper must state this scope plainly or extend tube margins to n=3.
+
+## 2026-06-10 — D-047: Honest-chain consequences and their principled resolutions
+
+With the D-046 chain corrected, the certified d=30 product at ε=0.1 EVAPORATED on the
+full-volatility Borg trace (the in-sample/teleporting evidence had been flattering it):
+held-out boxes inflated ~18% on the energy face and crossed the knife edge where margin
+overhead ≈ thermal headroom; the first corrected 20-seed run showed delivery failures
+at 27% (attribution: warm starts + held-out shift, not broken in-box certificates).
+Resolutions, all fixed a priori and theory-clean:
+
+1. **ε face allocation** (`ConditionalBoxes.FACE_ALLOC = (0.45, 0.45, 0.10)`): Bonferroni
+   is valid for ANY allocation summing to ε; weighting toward the margin-driving faces
+   (amplitude/energy) and away from the rarely-binding dew face is a design choice made
+   before validation.
+2. **e₀ warm-start ball in the tube** (`build_tube(e0_K=1.5)`): margins now cover any
+   event start within 1.5 K of the ready state — bound DERIVED from the idle law's
+   one-hour convergence (8 K worst gap × e^{−3600/2080} < 0.18). Closes the Thm-2
+   initial-state gap formally instead of empirically.
+3. **Failure attribution + theory-faithful gates**: every B4 delivery failure is
+   classified warm-start / out-of-box / clean-in-box. Gate: clean-in-box failures must
+   be ZERO (else the certificate is broken); cold-start failure rate must not reject
+   ≤ ε (Clopper–Pearson). Warm starts are reported, not hidden in the denominator.
+4. **Workload-volatility scale κ** (`RealRecordPool(scale=κ)`): Borg cell-a at full-hall
+   scale (~±25%/h) is a deliberately hard mixed-batch workload; κ transparently scales
+   the heat residuals for both FITTING and REPLAY. F1 becomes "the certification wall":
+   d=30 certifies 27–80 kW for κ ≤ 0.8 and nothing at κ = 1; d=15 certifies 85–163 kW
+   throughout. Closed-loop F2/stress run at κ = 1 (B4 rationally offers ~nothing — a
+   true negative, reported) AND κ = 0.5 (the steadier-hall reference where the
+   certificate chain is exercised). Dedicated training halls are widely reported far
+   steadier than mixed batch cells; κ_ref = 0.5 is labeled as scenario, not claim.
+5. **Stress criterion = graceful degradation**: the §8 stresses are deliberately
+   beyond-box (systematic shift no certificate covers); acceptance is "no worse than
+   idle, OR an order of magnitude below uncertified B2 and ≤ 1 K", with the economic
+   consequence (bounded penalties) reported. At κ=0.5: B4 worst 0.62 K vs B2 12.2 K on
+   the all-hours-burst day; zero violations in dew-shift/consecutive stresses.

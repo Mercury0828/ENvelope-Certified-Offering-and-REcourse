@@ -40,6 +40,7 @@ from encore.tighten.quantile_boxes import Box, ConditionalBoxes
 from encore.tighten.tube import lqr_gain
 from encore.utils.plotting import savefig, use_style
 from encore.utils.provenance import write_manifest
+from encore.utils.stats import stable_seed
 
 OUT = REPO / "results" / "phase5"
 SEED = 20260610
@@ -78,10 +79,14 @@ def day_offers(p, cfg, cb, pool_saa, prices, weather, K):
     pr = cfg["product"]
     kw = dict(d_min=float(pr["d_min"]), p_act=pr["p_act"],
               c_deg_per_Kh=pr["c_deg_per_Kh"], T_thr=pr["T_thr_C"], n_grid=10)
+    # readiness=False (D-048): terminal startability is guaranteed by construction —
+    # adjacency pruning leaves a recovery hour and the sprint idle law restores the
+    # e0-ball ready state well within it; the LP terminal (immediate re-delivery)
+    # over-constrains by exactly q and is reserved for the theory object.
     return {
         "B2": make_offers(p, contexts, "deterministic", K=K, **kw),
         "B3": make_offers(p, contexts, "saa", boxes=bx_saa, K=K, **kw),
-        "B4": make_offers(p, contexts, "certified", boxes=bx_cert, K=K, readiness=True, **kw),
+        "B4": make_offers(p, contexts, "certified", boxes=bx_cert, K=K, **kw),
     }
 
 
@@ -93,11 +98,11 @@ def main():
     pr = cfg["product"]
     K = lqr_gain(p, r_u=1.0 / (10e3) ** 2)
 
-    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED)
+    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit")
     feats, recs = pool_fit.features_records()
     cb = ConditionalBoxes(feats, recs, eps=0.1, k=80, k_cal=150)
-    print(f"W(c) refit on {len(recs)} real records "
-          f"(trace heat residuals x KIAH dew residuals)")
+    print(f"W(c) fit on {len(recs)} real records (trace days 0-20, causal climatology); "
+          f"evaluation replays HELD-OUT days 21-30 (D-046)")
 
     rows = []
     for week, start in WEEKS.items():
@@ -107,11 +112,13 @@ def main():
             pi_rt5 = rtm_to_5min(prices["rtm_15min"])
             rtm_h = prices["rtm_15min"].reshape(24, 4).mean(axis=1)
             base = baseline_day(p, T_WB)
-            offers = day_offers(p, cfg, cb, RealRecordPool(p.Q_IT_nom, seed=SEED + 1),
+            offers = day_offers(p, cfg, cb,
+                                RealRecordPool(p.Q_IT_nom, seed=SEED + 1, role="fit"),
                                 prices, weather, K)
             for seed in SEEDS:
-                rng = np.random.default_rng(hash((DATE, seed)) % 2**32)
-                pool = RealRecordPool(p.Q_IT_nom, seed=seed * 7919 + 13)
+                rng = np.random.default_rng(stable_seed(DATE, seed))
+                pool = RealRecordPool(p.Q_IT_nom, seed=stable_seed("replay", seed),
+                                      role="eval")
                 activations = rng.uniform(size=24) < pr["p_act"]
                 w_day = np.zeros((24, 12))
                 dew_res = np.zeros(24)

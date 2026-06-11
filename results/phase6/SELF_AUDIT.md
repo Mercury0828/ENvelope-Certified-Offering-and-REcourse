@@ -1,74 +1,89 @@
-# Phase 6 — SELF AUDIT (2026-06-10)
+# Phase 6 — SELF AUDIT (regenerated 2026-06-11 after the pre-paper audit; supersedes
+# the 2026-06-10 version, whose closed-loop numbers predate D-046/D-047/D-048)
 
-## What was built
-
-- **F1** (`phase6_F1_context.py`) — the headline value-of-context figure: certified
-  envelope vs information level across the dew range, real Borg-2019 heat residuals +
-  NWP-skill dew model, ready states at the robust floor (D-044). Includes the d = 15
-  shorter-product curve (gate-1 tie-back).
-- **F2 + main table** (`phase6_F2_table.py`) — 3 real weeks × 6 controllers × **20
-  seeds** (2,520 controller-days), full §8 metric set incl. delivery ratio, rebound
-  energy, condensation-floor clip events, certificate validity.
-- **F3** (`phase6_F3_cdeg.py`) — degradation supply curve over two decades of c_deg.
-- **Stress tests** (`phase6_stress.py`) — AI-burst day (top-decile real burst hours),
-  +3 K dew-shift day (beyond the NWP bound), 6-hour consecutive-activation day.
-- **One-command reproduction**: `make figures` / `python experiments/make_figures.py`
-  (+ `--skip-table`), writing `FIGURES_MANIFEST.json` (script → artifacts, git hash,
-  config hashes, seed).
+Every number below is read from a committed artifact in this directory (file named in
+parentheses). The evidence chain is the CORRECTED one: hour-continuous state (no
+teleporting), CRC32 deterministic seeds, day-block held-out replay (fit days 0–20,
+eval days 21–30), causal climatology forecast, conformal W(c) with a-priori face
+allocation, tube margins with the e₀ = 1.5 K warm-start ball, whole-hour settlement
+certification + activation-window depth cap, adjacency-pruned commitments, sprint
+recovery between events.
 
 ## Acceptance checklist (guide §11, Phase 6)
 
 | Criterion | Status | Evidence |
 |---|---|---|
-| Figures publication-grade, consistent style file | **PASS** | all via `config/encore.mplstyle`, PDF+PNG, labeled axes with units; visually inspected |
-| Every number regenerable by one `make figures` | **PASS** | `Makefile` + `experiments/make_figures.py`; regeneration executed end-to-end with all assertions green |
-| Results provenance manifest | **PASS** | `FIGURES_MANIFEST.json` + per-experiment provenance JSONs |
-| F1–F3 + main table + stress tests, 20+ seeds | **PASS** | this directory |
+| Figures publication-grade, shared style | **PASS** | F1_context, F2_portfolio_k{100,050}, F3_cdeg (PDF+PNG, encore.mplstyle) |
+| Every number regenerable by one `make figures` | **PASS** | executed end-to-end post-fix; `FIGURES_MANIFEST.json`; CRC32 seeds make reruns bit-comparable |
+| Provenance manifest | **PASS** | FIGURES_MANIFEST.json + per-experiment provenance JSONs |
+| F1–F3 + main table + stress, 20+ seeds | **PASS** | this directory; two workload scenarios κ ∈ {1.0, 0.5} |
 
-## Headline numbers
+## Headline results
 
-- **F1:** context-free certification = **0 kW everywhere**; hour-of-day-conditional
-  certification recovers **24.6 kW** (d = 30) and **80.5 kW** (d = 15) per MW IT in dry
-  weather (dew ≲ 15 °C); all certification dies above dew ≈ 16 °C for this volatile
-  workload while the deterministic ceiling continues at 55–93 kW — certification value
-  AND its humidity limit in one picture.
-- **Main table (20 seeds):** B4 market value +$26.0/day (scarcity), +$3.6 (humid),
-  $0 (mild — rationally sits out); delivery ratio 1.00; **zero violations beyond the
-  one workload-tail day that hits the idle B1 identically (+0.02 K)**. B2: 50–74
-  violation-days per week, worst +13.1 K. Certificate validity: **2/89 delivery
-  failures = 2.2% ≤ ε = 10%** (CI95 hi 5.4%).
-- **F3:** committed capacity falls smoothly 225 → 81 kW as c_deg goes 0.5 → 50 $/K·h on
-  the scarcity day (value $82 → $54/day); the mild day exits the market above
-  c_deg ≈ 1 — degradation pricing acts as the marginal screen exactly as C3(iii)
-  anticipates. γ ∈ {1.5, 3}× moves nothing for B4 (zero in-box penalties; stated).
-- **Stress:** burst day — B4 0 violations, 0.35 kWh shortfall, $0.78 penalty (graceful,
-  inside ε) vs B2 +11.9 K and $26 penalties; dew-shift +3 K — B4 clean (floor clipping
-  handled); consecutive activations — B4 zero shortfall/violations (readiness wiring).
+**F1 — the certification wall** (`F1_kappa.csv`, `F1_dew.csv`): at hour 14, dry day,
+held-out-fit conformal W(c): the d = 30 product certifies 76.7 kW at κ = 0.1, 35.8 kW
+at κ = 0.5, 3.6 kW at κ = 0.8 and **nothing at κ = 1.0** (Borg-2019 cell-a at full-hall
+scale, ~±25%/h); d = 15 certifies exactly 2× throughout (energy-driven product).
+Context-free certification is zero at every κ and every dew point. At κ = 0.5 the dew
+wall sits near 16 °C for d = 30.
 
-## Fixes made during this phase (all logged)
+**Main table, 20 seeds × 3 real weeks** (`main_table_k050.csv` / `_k100.csv`):
 
-- **D-044**: certified ready states must pre-cool only to the ROBUST floor — the
-  nominal-floor ready state made every certified envelope infeasible from its own
-  start for dew ≥ 16 (caught by F1's cliff diagnosis).
-- **D-045**: idle hours hold the NOMINAL point; pre-cool only ahead of commitments —
-  the always-at-ready idle law let workload tails push even no-market B1 over T_max in
-  humid weeks at 20-seed depth. B1 semantics now exactly match the D-035 baseline.
-- **D-043** (negative finding): recent-residual volatility regime is non-informative
-  on Borg-2019 (corr ≤ 0.08) — context enrichment needs operator job-schedule data.
-- mojibake-safe editing note: PowerShell `Get-Content` without `-Encoding` corrupted a
-  UTF-8 script once; rewritten via the file tools (process note, no code impact).
+| κ = 0.5 | mv $/day (±σ) | Σq kW/day | delivery ratio | penalties | viol days |
+|---|---|---|---|---|---|
+| B4 humid | **+40.0 ± 40.6** | 44.4 | 1.00 | 0 | **0** |
+| B4 scarcity | **+34.3 ± 52.4** | 165.6 | 1.00 | 0 | **0** |
+| B4 mild | +1.0 | 19.7 | 1.00 | 0 | 0 |
+| B2 (no cert) humid | +243.7 | 347.9 | 0.96 | $1.40/day | **73 days, max 6.2 K** |
+| B3 (SAA) humid | +74.7 | 85.8 | 1.00 | 0 | 0 (no guarantee) |
+
+At κ = 1.0 B4 rationally commits nothing anywhere (true negative, reported); B2 still
+violates on 10–75 days/week.
+
+**Certificate validity** (`certificate_validity_k050.json`): 171 obligations on
+held-out replay days — **0 delivery failures of any kind** (0 warm-start, 0
+out-of-box, 0 clean-in-box); Clopper–Pearson 95% upper bound 3.85% ≤ ε = 10%. 77 of
+171 events started warm (within the e₀ ball after sprint recovery) and all delivered.
+Held-out joint box coverage 0.904 (target ≥ 0.90, 240 eval hours).
+
+**F3** (`F3_cdeg.csv`, κ = 0.5): scarcity-day commitment falls monotonically
+431 → 134 kW as c_deg sweeps 0.5 → 50 $/K·h (value $262 → $141/day); the mild day
+exits the market above c_deg ≈ 10–20. γ ∈ {1.5,3}× moves nothing for B4 (zero in-box
+penalties).
+
+**Stress** (`stress_summary.csv`, κ = 0.5, deliberately beyond-box): B4 — zero
+violations, zero shortfall, zero penalties in ALL three scenarios (all-hours top-decile
+burst day, +3 K dew shift, 6-hour consecutive calls); B2 — 2.6–5.5 K violations and
+penalties in all three. Graceful-degradation criterion met with margin.
+
+## What changed since the superseded audit (D-046/D-047/D-048)
+
+1. Hour-boundary state teleportation fixed → recovery energy and warm starts real.
+2. CRC32 seeds → bit-reproducible experiments (root cause of the earlier
+   audit-vs-artifact mismatch).
+3. Day-block held-out replay + causal forecast → no in-sample circularity.
+4. Clopper–Pearson CIs; theory-faithful certificate gates with failure attribution.
+5. ε face allocation (0.45/0.45/0.10) + e₀ = 1.5 K ball (derived) in the tube.
+6. **Settlement alignment**: certification now enforces BOTH the activation-window
+   depth cap and the whole-hour settlement energy (guide 5.3) — window-only
+   certification was anti-conservative once in-hour recovery existed.
+7. **Structural finding**: the infinite-horizon readiness fixed point is EMPTY under
+   whole-hour settlement (consecutive full-depth delivery is thermodynamically
+   impossible) → commitments are adjacency-pruned and recovery hours use a sprint law
+   (full extraction headroom, ~20 min for a 15 K excursion); terminal startability
+   holds by construction.
 
 ## Honest notes / open risks
 
-- One humid day-seed (1 of 2,520) shows +0.02 K over the lumped T_max proxy with NO
-  market participation — an out-of-box workload tail, identical for B1/B4, within the
-  0.5 K intra-step tolerance (D-024). The acceptance assertion is therefore "B4 never
-  worse than idle, ≤ 0.5 K", not an unconditional zero — stated plainly.
-- B4's absolute $ remain modest on this trace (volatile mixed cluster + hour-of-day
-  context only). The paper should present per-MW scaling and the steadier-hall
-  sensitivity as the realistic upside; the zero-QoS first-tranche framing (guide 2.2)
-  is the positioning, not $-dominance over B6.
-- B3 shows 1 violation-day (humid, +0.02 K = the same exogenous tail) and zero others
-  at 20 seeds; its lack of guarantee shows in F1-style coverage, not yet in closed-loop
-  tails — worth a targeted adversarial seed study if a reviewer pushes.
-- Trace/price alignment remains hour-of-day only; F2 magnitudes inherit that caveat.
+- κ = 0.5 is a labeled SCENARIO (steadier-hall reference), not a measurement: Borg
+  cell-a at κ = 1 supports no certified d=30/ε=0.1 product, and the paper must lead
+  with that as a finding about workload volatility, using the κ-wall as the
+  requirement curve. Real dedicated-training-hall traces would replace κ.
+- Warm-start coverage relies on the e₀ = 1.5 K ball + sprint recovery; the bound is
+  derived from the idle law, not yet stated as a lemma — Phase-7 theory writing must
+  formalize it (or condition Thm 2 explicitly).
+- Dew channel remains the NWP-skill model (D-042); heat channel is real.
+- ε = 0.05 certification: zero at κ ≥ 0.5 (F1_kappa.csv dashed curve) — stated.
+- B5/B6 risk cells are model assumptions (render n/a); B3's clean weeks are luck, not
+  guarantee; B2's mv remains inadmissible-by-safety.
+- 2-state certified product (D-027); S2/3-state numbers are deterministic capability.

@@ -35,13 +35,18 @@ def test_lqr_gain_stabilizes(p):
 
 
 def test_margins_monotone(p):
-    t1 = build_tube(p, 2, 12, w_Q=50e3, w_D=1.0, E_budget=60e6)
-    t2 = build_tube(p, 2, 12, w_Q=100e3, w_D=1.0, E_budget=120e6)
-    t_box = build_tube(p, 2, 12, w_Q=50e3, w_D=1.0)            # persistent (no budget)
-    assert np.all(np.diff(t1.M[:, 0]) >= 0)          # margins grow along the horizon
-    assert np.all(t2.M >= t1.M)                       # and with the disturbance set
+    # disturbance-driven part (e0 = 0) grows along the horizon and with the set
+    t1 = build_tube(p, 2, 12, w_Q=50e3, w_D=1.0, E_budget=60e6, e0_K=0.0)
+    t2 = build_tube(p, 2, 12, w_Q=100e3, w_D=1.0, E_budget=120e6, e0_K=0.0)
+    t_box = build_tube(p, 2, 12, w_Q=50e3, w_D=1.0, e0_K=0.0)   # persistent (no budget)
+    assert np.all(np.diff(t1.M[:, 0]) >= 0)
+    assert np.all(t2.M >= t1.M)
     assert np.all(t_box.M >= t1.M - 1e-12)            # budget can only shrink margins
     assert t1.M[1:, 0].min() > 0
+    # the e0 (warm-start) term adds margin everywhere and equals e0 at t=0
+    t_e0 = build_tube(p, 2, 12, w_Q=50e3, w_D=1.0, E_budget=60e6, e0_K=1.5)
+    assert np.all(t_e0.M >= t1.M)
+    assert t_e0.M[0, 0] == pytest.approx(1.5)
 
 
 def test_tightened_inside_nominal(p, x0):

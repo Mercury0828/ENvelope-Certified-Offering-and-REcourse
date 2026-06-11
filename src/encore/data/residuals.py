@@ -30,14 +30,27 @@ TRACE = REPO_ROOT / "data" / "traces" / "google2019a" / "hall_profile_5min.csv"
 WEATHER = REPO_ROOT / "data" / "weather" / "kiah_asos_2023_2024.csv"
 
 
-def heat_residual_hours(Q_nom_W: float) -> dict:
-    """Per trace-hour 12-step heat residual vectors [W] + hour-of-day labels."""
+CLIM_DAYS = 21      # causal forecast window: climatology fit on trace days 0-20 only
+
+
+def heat_residual_hours(Q_nom_W: float, days: tuple[int, int] | None = None) -> dict:
+    """Per trace-hour 12-step heat residual vectors [W] + hour-of-day labels.
+
+    The hour-of-day climatology (the operator's day-ahead forecast model) is computed
+    CAUSALLY from the first CLIM_DAYS trace days only — no look-ahead (D-046; an
+    earlier version averaged over the whole trace, letting each hour forecast itself).
+    `days = (lo, hi)` filters which trace days' hours are returned, enabling a strict
+    calibration/evaluation block split.
+    """
     df = pd.read_csv(TRACE)
     df["hod"] = (df["t_s"] // 3600) % 24
     df["P_W"] = df["P_mean_kW"] * 1e3
-    clim = df.groupby("hod")["P_W"].transform("mean")
-    df["resid_W"] = df["P_W"] - clim          # unscaled (D-042)
+    df["day"] = df["t_s"] // 86400
+    clim_map = df[df["day"] < CLIM_DAYS].groupby("hod")["P_W"].mean()
+    df["resid_W"] = df["P_W"] - df["hod"].map(clim_map)
     df["hour_idx"] = df["t_s"] // 3600
+    if days is not None:
+        df = df[(df["day"] >= days[0]) & (df["day"] < days[1])]
     vecs, hods = [], []
     for h, grp in df.groupby("hour_idx"):
         if len(grp) == 12:
@@ -57,10 +70,23 @@ def dew_residual_hours() -> dict:
 
 
 class RealRecordPool:
-    """Joint (heat, dew) hourly records + replayable step vectors, by hour-of-day."""
+    """Joint (heat, dew) hourly records + replayable step vectors, by hour-of-day.
 
-    def __init__(self, Q_nom_W: float, dt_s: float = 300.0, seed: int = 0):
-        self.heat = heat_residual_hours(Q_nom_W)
+    role: "fit" = trace days 0-20 (W(c) calibration), "eval" = days 21-30 (held-out
+    replay in closed-loop experiments), "all" = everything (unit tests / coverage
+    studies). Splitting by day block removes the in-sample certificate-validation
+    circularity (D-046); both roles use the same CAUSAL climatology forecast.
+    """
+
+    def __init__(self, Q_nom_W: float, dt_s: float = 300.0, seed: int = 0,
+                 role: str = "all", scale: float = 1.0):
+        """scale: workload-volatility factor kappa (D-047): heat residual vectors are
+        multiplied by kappa, transparently mapping the Borg cell-a hall to steadier
+        (or wilder) workload mixes. Fit and replay must use the SAME kappa."""
+        days = {"fit": (0, CLIM_DAYS), "eval": (CLIM_DAYS, 31), "all": None}[role]
+        self.heat = heat_residual_hours(Q_nom_W, days=days)
+        if scale != 1.0:
+            self.heat["vectors"] = self.heat["vectors"] * float(scale)
         self.dew = dew_residual_hours()
         self.dt = dt_s
         self.rng = np.random.default_rng(seed)

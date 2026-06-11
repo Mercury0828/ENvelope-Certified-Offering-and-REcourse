@@ -23,10 +23,18 @@ from ..market.offering import HourPlan
 STEPS_H = 12
 
 
+K_RECOVERY = 60e3      # [W/K] sprint gain on T_w for idle/recovery hours (D-048):
+                       # commands full extraction headroom when hot (clipped into the
+                       # realized U(x) by the simulator), recovering a 15 K post-event
+                       # excursion in ~20 min — one uncommitted hour between events
+                       # (adjacency pruning) therefore restores the e0-ball ready state
+                       # by construction, replacing the LP terminal constraint.
+
+
 def _idle_controller(p: PlantParams, target: np.ndarray, K: np.ndarray):
-    """Track-to-target law: u = Q_IT + K (x - target)."""
+    """Sprint track-to-target law: u = Q_IT + K_rec (T_w - target_w)."""
     def ctl(t, x):
-        return float(p.Q_IT_nom + K[0] @ (np.asarray(x) - target))
+        return float(p.Q_IT_nom + K_RECOVERY * (np.asarray(x)[1] - target[1]))
     return ctl
 
 
@@ -53,6 +61,8 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
     """
     x = plans[0].x_ready.copy()
     P_all, Tj_all, switches, infeasible_starts = [], [], 0, 0
+    infeasible_hours = []    # hours whose committed event started outside the
+                             # certificate's e0-ball (warm starts; D-046/D-047)
     clip_events = 0          # hours where the realized condensation floor clipped u
 
     for h in range(24):
@@ -62,19 +72,23 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
             L = build_lifted(p, plan.spec, tube=plan.tube)
             traj = extract_trajectory(L, x, plan.q_W)
             if traj is None:
-                # actual state cannot start the committed event (e.g. insufficient
-                # re-positioning) — fall back to the D-1 plan from the ready state;
-                # feedback absorbs the gap. Counted and reported.
+                # actual state cannot start the committed event (insufficient
+                # re-positioning) — keep the D-1 plan from the ready state as the
+                # REFERENCE, but simulate from the TRUE carried state: feedback must
+                # genuinely absorb the gap (e_0 != 0, outside the certificate — counted,
+                # reported, and now actually exercised; D-046).
                 infeasible_starts += 1
+                infeasible_hours.append(h)
                 traj = extract_trajectory(L, plan.x_ready, plan.q_W)
             cert = {"x_nom": traj[0], "u_nom": traj[1], "K": K, "q": plan.q_W,
                     "spec": plan.spec, "base": L.base}
             if controller == "mpc":
                 ctl, st = mpc_controller(p, cert, tube=plan.tube)
-                out = simulate_policy(p, cert, w_day[h], dew_res_day[h], controller=ctl)
+                out = simulate_policy(p, cert, w_day[h], dew_res_day[h], controller=ctl,
+                                      x0=x)
                 switches += int(st["switched"])
             else:
-                out = simulate_policy(p, cert, w_day[h], dew_res_day[h])
+                out = simulate_policy(p, cert, w_day[h], dew_res_day[h], x0=x)
         else:
             L = build_lifted(p, plan.spec)          # for base power bookkeeping
             target = _idle_target(p, plan, plans[h + 1] if h < 23 else None,
@@ -83,7 +97,8 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
                     "u_nom": np.full((STEPS_H, 1), p.Q_IT_nom), "K": K,
                     "q": 0.0, "spec": plan.spec, "base": L.base}
             ctl = _idle_controller(p, target, K)
-            out = simulate_policy(p, cert, w_day[h], dew_res_day[h], controller=ctl)
+            out = simulate_policy(p, cert, w_day[h], dew_res_day[h], controller=ctl,
+                                  x0=x)
         # state continuity: hour h+1 starts where hour h ended (overwrite x)
         x = out["X"][-1].copy()
         P_all.append(out["P_W"])
@@ -95,5 +110,6 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
         "T_j": np.concatenate(Tj_all),
         "switches": switches,
         "infeasible_starts": infeasible_starts,
+        "infeasible_hours": infeasible_hours,
         "clip_events": clip_events,
     }

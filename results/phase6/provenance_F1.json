@@ -1,6 +1,6 @@
 {
-  "timestamp_utc": "2026-06-11T01:56:37.280183+00:00",
-  "git_hash": "ab8c6697d4501ddb460976eb11faab29b1d9c431",
+  "timestamp_utc": "2026-06-11T04:24:13.571551+00:00",
+  "git_hash": "1b1a0fe2a6946799fe2ad7628bf05f26c8269900",
   "config_path": "E:\\Project-git\\ENvelope-Certified Offering and REcourse\\config\\plant.yaml",
   "config_sha256": "ee76c5a5f4768b5cc993f92f6b8216dfb1df31c2bc2cf7b2662386fc6cb1bbb3",
   "seed": 20260610,
@@ -10,15 +10,15 @@
   "scipy": "1.17.1",
   "experiment": "phase6_F1_context",
   "hod": 14,
-  "uniform_box": [
-    259.5066158015985,
-    333.4335134759469,
-    3.061952252384121
+  "kappa_grid": [
+    0.1,
+    0.25,
+    0.4,
+    0.5,
+    0.65,
+    0.8,
+    1.0
   ],
-  "hod_box_eps10": [
-    237.70035692741442,
-    228.55827133095974,
-    2.221526643246144
-  ],
-  "regime_feature_finding": "non-informative on Borg-2019 (corr ~0.0-0.08), D-043"
+  "kappa_ref": 0.5,
+  "regime_feature_finding": "non-informative on Borg-2019 (D-043)"
 }

@@ -43,12 +43,14 @@ def certified_max_q(p: PlantParams, spec: EnvelopeSpec, tube: TubeMargins,
 
 
 def simulate_policy(p: PlantParams, cert: dict, w_steps: np.ndarray, dew_res: float,
-                    controller=None) -> dict:
+                    controller=None, x0: np.ndarray | None = None) -> dict:
     """Play one hour against realized disturbances.
 
     w_steps: (N,) realized per-step heat deviations [W]; dew_res: realized dew residual
     [K]. controller(t, x) -> u overrides the fallback policy (used by the MPC layer);
     inputs are clipped into the REALIZED U(x) before applying — physical actuation.
+    x0: the ACTUAL starting state (defaults to the certificate's nominal start; the day
+    simulator must pass the carried state — hour boundaries never teleport, D-046).
     """
     spec: EnvelopeSpec = cert["spec"]
     N = spec.horizon_steps
@@ -59,7 +61,7 @@ def simulate_policy(p: PlantParams, cert: dict, w_steps: np.ndarray, dew_res: fl
     T_dew_real = spec.T_dew + dew_res
     floor_real = T_in_floor(p, T_dew_real)
 
-    x = X_nom[0].copy()
+    x = (X_nom[0] if x0 is None else np.asarray(x0, dtype=float)).copy()
     X = [x.copy()]
     U, P = [], []
     viol_T = 0.0
@@ -78,7 +80,8 @@ def simulate_policy(p: PlantParams, cert: dict, w_steps: np.ndarray, dew_res: fl
         P.append(base["P_pump_W"] + u_cl / base["cop_ref"])
         viol_T = max(viol_T, x[0] - p.T_max)
 
-    delivered = sum((base["P_base_W"] - P[t]) * p.dt_ctrl for t in range(m_act))
+    # settlement counts the WHOLE hour (guide 5.3, D-048)
+    delivered = sum((base["P_base_W"] - P[t]) * p.dt_ctrl for t in range(N))
     required = cert["q"] * m_act * p.dt_ctrl
     # condensation check at realized dew: supply floor violated iff extraction demands
     # T_in below floor_real, i.e. u exceeded the realized upper bound (already clipped);

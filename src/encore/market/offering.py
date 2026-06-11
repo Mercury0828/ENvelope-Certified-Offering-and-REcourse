@@ -42,15 +42,18 @@ _READINESS_CACHE: dict = {}
 
 
 def _readiness_terminal(p: PlantParams, spec: EnvelopeSpec, q: float):
-    """R(q) polygon H-rep for the committed offer (cached; D-041 resolution).
+    """ONE-STEP readiness polygon R1(q) for the committed offer (D-041/D-048).
 
-    Computed on the nominal envelope (readiness is a geometric object of the plant);
-    robustness enters via the terminal-row tube margins in build_lifted.
+    R1 = states from which (q, d) is deliverable this hour within safety — the
+    STARTABLE set. The full fixed point R-infinity is EMPTY under whole-hour
+    settlement (consecutive full-depth delivery is thermodynamically impossible —
+    D-048 finding), which is why commitments are also adjacency-pruned: an event hour
+    must end startable, and the following uncommitted hour restores the ready state.
     """
     key = (round(spec.T_dew, 1), spec.d_min, round(q / 5e3))
     if key not in _READINESS_CACHE:
         out = readiness_iteration(p, dc_replace(spec, terminal=None), q=q,
-                                  max_iter=6, tol_K=0.2)
+                                  max_iter=1, tol_K=0.2)
         _READINESS_CACHE[key] = poly_halfspaces(out["fixed_point"])
     return _READINESS_CACHE[key]
 
@@ -149,4 +152,16 @@ def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=N
         assert best_q <= F + 1e-6, "offer exceeds its envelope — construction broken"
         plans.append(HourPlan(hour=h, q_W=best_q, F_W=F, spec=spec, tube=tube,
                               x_ready=x_ready, expected_value_usd=best_v))
+
+    # Adjacency pruning (D-048): under whole-hour settlement, consecutive full-depth
+    # delivery is thermodynamically impossible (the fixed-point readiness set is
+    # empty), so commitments must leave a recovery/re-positioning hour between events.
+    # Greedy by expected value: keep an hour only if neither neighbor is kept.
+    kept = set()
+    for pl in sorted(plans, key=lambda x: -x.expected_value_usd):
+        if pl.q_W > 0 and (pl.hour - 1) not in kept and (pl.hour + 1) not in kept:
+            kept.add(pl.hour)
+    for pl in plans:
+        if pl.q_W > 0 and pl.hour not in kept:
+            pl.q_W = 0.0
     return plans

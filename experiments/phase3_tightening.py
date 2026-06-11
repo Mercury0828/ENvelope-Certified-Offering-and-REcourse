@@ -45,6 +45,7 @@ from encore.tighten.quantile_boxes import Box, ConditionalBoxes
 from encore.tighten.tube import build_tube, corner_disturbance, lqr_gain
 from encore.utils.plotting import savefig, use_style
 from encore.utils.provenance import write_manifest
+from encore.utils.stats import clopper_pearson
 
 OUT = REPO / "results" / "phase3"
 SEED = 20260610
@@ -189,13 +190,14 @@ def main():
 
         for mode, s in stats.items():
             rate = s["dfail"] / N_SCEN
+            cp_lo, cp_hi = clopper_pearson(s["dfail"], N_SCEN)
             val_rows.append({"bin": name, "policy": mode, "q_committed_kW": q / 1e3,
                              "certifiable": True, "n": N_SCEN, "n_in_box": s["n_in"],
                              "safety_viol_in_box": s["viol_in"],
                              "safety_viol_out_box": s["viol_out"],
                              "delivery_fail_rate": rate,
-                             "delivery_fail_ci95_hi":
-                                 rate + 1.96 * np.sqrt(max(rate * (1 - rate), 1e-9) / N_SCEN),
+                             "delivery_fail_ci95_lo": cp_lo,
+                             "delivery_fail_ci95_hi": cp_hi,
                              "mpc_switches": s["switches"] if mode == "mpc" else None})
             assert s["viol_in"] == 0, f"safety violation INSIDE the box: {name}/{mode}"
             assert rate <= EPS + 1.96 * np.sqrt(EPS * (1 - EPS) / N_SCEN), \

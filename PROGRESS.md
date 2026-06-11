@@ -88,10 +88,20 @@ phase6:
     - stress_tests            # burst / dew-shift / consecutive: B4 clean, B2 +8-12 K
     - make_figures            # Makefile + orchestrator + FIGURES_MANIFEST.json
   fixes: [D-043 regime non-informative, D-044 robust-floor ready, D-045 idle-at-nominal]
+pre_paper_audit:
+  status: complete            # results/REVIEW_PRE_PAPER.md
+  method: clean-context adversarial subagent + numeric cross-checks + fix-revalidate
+  fixes: [D-046 state-continuity/hash-seeds/held-out-split/CP-CIs,
+          D-047 eps-allocation/e0-ball/attribution-gates/kappa-scenarios,
+          D-048 whole-hour-settlement-alignment/adjacency-pruning/sprint-recovery]
+  validated_chain: 0/171 delivery failures (CP95<=3.85%, eps=0.1), 0 violations,
+    held-out coverage 0.904, bit-reproducible; kappa=1 true-negative reported
+  owner_decisions_pending:
+    - 3-state tube margins (certify the S2 product) vs scope the claim to coolant loop
 phase7:
   status: not_started         # paper drafting — OWNER-SUPERVISED, not autonomous (guide §11)
   next_step: owner kicks off drafting sessions; verify-flagged citations (guide §3) must be checked first
-autonomous_pipeline: COMPLETE  # phases 0-6 done; all gates passed (1: GO, 2: GO)
+autonomous_pipeline: COMPLETE  # phases 0-6 done + pre-paper audit; all gates passed
 remote: https://github.com/Mercury0828/ENvelope-Certified-Offering-and-REcourse (main; push at milestones)
 skill_js: lessons pushed (29c93a4)
 owner_todo:

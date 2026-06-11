@@ -81,24 +81,38 @@ def lqr_gain(p: PlantParams, n_states: int = 2, q_T: float = 1.0,
 
 
 def build_tube(p: PlantParams, n_states: int, N: int, w_Q: float, w_D: float,
-               K: np.ndarray | None = None, E_budget: float | None = None) -> TubeMargins:
+               K: np.ndarray | None = None, E_budget: float | None = None,
+               e0_K: float = 1.5) -> TubeMargins:
+    """e0_K: componentwise bound [K] on the INITIAL state error e_0 — closes the
+    warm-start gap (D-046/D-047): the certificate covers any event start within e0_K of
+    the committed ready state, not just e_0 = 0. Default derived from the idle law's
+    one-hour convergence: worst pre-positioning gap ~8 K (nominal->dry-ready) decays by
+    exp(-3600 s / ~2080 s) < 0.18, so |e_0| <= 1.5 K after one idle hour."""
     if n_states != 2:
         raise NotImplementedError("tube certification scoped to the 2-state model (D-027)")
     Ad, Bud, Ed = discrete_matrices(p, n_states, p.dt_ctrl)
     K = lqr_gain(p, n_states) if K is None else np.asarray(K, dtype=float)
     A_K = Ad + Bud @ K
 
-    # coefficient sequence |A_K^i E_d| for i = 0..N-1
+    # coefficient sequence |A_K^i E_d| for i = 0..N-1, and |A_K^t| for the e_0 term
     coefs = np.zeros((N, n_states))
     Ai_Ed = Ed[:, 0].copy()
+    A_pow = np.eye(n_states)
+    e0_term = np.zeros((N + 1, n_states))
+    e0_vec = np.full(n_states, float(e0_K))
+    e0_term[0] = np.abs(A_pow) @ e0_vec
     for i in range(N):
         coefs[i] = np.abs(Ai_Ed)
         Ai_Ed = A_K @ Ai_Ed
+        A_pow = A_K @ A_pow
+        e0_term[i + 1] = np.abs(A_pow) @ e0_vec
 
     n_budget = np.inf if E_budget is None else E_budget / (w_Q * p.dt_ctrl) if w_Q > 0 else 0.0
 
     M = np.zeros((N + 1, n_states))
     mu = np.zeros(N + 1)
+    M[0] = e0_term[0]
+    mu[0] = float((np.abs(K) @ M[0])[0])
     for t in range(1, N + 1):
         for j in range(n_states):
             c = np.sort(coefs[:t, j])[::-1]
@@ -108,6 +122,7 @@ def build_tube(p: PlantParams, n_states: int, N: int, w_Q: float, w_D: float,
                 full = int(n_budget)
                 M[t, j] = w_Q * (c[:full].sum()
                                  + (n_budget - full) * (c[full] if full < t else 0.0))
+            M[t, j] += e0_term[t, j]
         mu[t] = float((np.abs(K) @ M[t])[0])
     return TubeMargins(K=K, A_K=A_K, M=M, mu=mu, w_Q=w_Q, w_D=w_D)
 

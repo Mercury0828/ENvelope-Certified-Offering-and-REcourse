@@ -1,6 +1,6 @@
 {
-  "timestamp_utc": "2026-06-11T01:54:20.764155+00:00",
-  "git_hash": "ab8c6697d4501ddb460976eb11faab29b1d9c431",
+  "timestamp_utc": "2026-06-11T04:21:16.294868+00:00",
+  "git_hash": "1b1a0fe2a6946799fe2ad7628bf05f26c8269900",
   "config_path": "E:\\Project-git\\ENvelope-Certified Offering and REcourse\\config\\plant.yaml",
   "config_sha256": "ee76c5a5f4768b5cc993f92f6b8216dfb1df31c2bc2cf7b2662386fc6cb1bbb3",
   "seed": 20260610,
@@ -15,11 +15,48 @@
     "humid": "2023-08-14",
     "scarcity": "2024-01-14"
   },
+  "kappas": [
+    1.0,
+    0.5
+  ],
   "certificate_validity": {
-    "eps": 0.1,
-    "n_obligations": 89,
-    "n_failures": 2,
-    "failure_rate": 0.02247191011235955,
-    "ci95_hi": 0.05361638856462097
+    "1.0": {
+      "eps": 0.1,
+      "n_obligations": 0,
+      "n_warm_starts": 0,
+      "n_failures_total": 0,
+      "failures_by_cause": {
+        "warm_start": 0,
+        "out_of_box": 0,
+        "clean_in_box": 0
+      },
+      "cold_start_failure_rate": 0.0,
+      "cold_start_ci95": [
+        0.0,
+        0.975
+      ],
+      "overall_failure_rate": 0.0,
+      "method": "Clopper-Pearson exact",
+      "kappa": 1.0
+    },
+    "0.5": {
+      "eps": 0.1,
+      "n_obligations": 171,
+      "n_warm_starts": 77,
+      "n_failures_total": 0,
+      "failures_by_cause": {
+        "warm_start": 0,
+        "out_of_box": 0,
+        "clean_in_box": 0
+      },
+      "cold_start_failure_rate": 0.0,
+      "cold_start_ci95": [
+        0.0,
+        0.03848335099752879
+      ],
+      "overall_failure_rate": 0.0,
+      "method": "Clopper-Pearson exact",
+      "kappa": 0.5
+    }
   }
 }

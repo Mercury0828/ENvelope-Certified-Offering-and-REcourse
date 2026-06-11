@@ -36,6 +36,7 @@ OUT = REPO / "results" / "phase6"
 SEED = 20260610
 C_DEG_GRID = [0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0]
 DAYS = {"scarcity (2024-01-16)": "2024-01-16", "mild (2024-04-03)": "2024-04-03"}
+KAPPA = 0.5    # steadier-hall reference scenario (D-047/D-048) — offers exist here
 
 
 def main():
@@ -44,7 +45,7 @@ def main():
     p = load_params()
     cfg = load_market_config()
     K = lqr_gain(p, r_u=1.0 / (10e3) ** 2)
-    pool = RealRecordPool(p.Q_IT_nom, seed=SEED)
+    pool = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", scale=KAPPA)
     feats, recs = pool.features_records()
     cb = ConditionalBoxes(feats, recs, eps=0.1, k=80, k_cal=150)
 
@@ -65,7 +66,7 @@ def main():
                                 d_min=float(cfg["product"]["d_min"]),
                                 p_act=cfg["product"]["p_act"],
                                 c_deg_per_Kh=c_deg, T_thr=cfg["product"]["T_thr_C"],
-                                n_grid=12, readiness=True)
+                                n_grid=12)
             rows.append({"day": label, "c_deg": c_deg,
                          "sum_q_kW": sum(pl.q_W for pl in plans) / 1e3,
                          "exp_value_usd": sum(pl.expected_value_usd for pl in plans),
@@ -89,7 +90,8 @@ def main():
     ax2.set_xlabel("degradation proxy $c_{deg}$ [\\$/K·h]")
     ax2.set_ylabel("expected offering value [\\$/day]")
     ax1.legend(fontsize=8)
-    fig.suptitle("F3 — degradation-cost sensitivity of the certified offer (d = 30 min)")
+    fig.suptitle(f"F3 — degradation-cost sensitivity of the certified offer "
+                 f"(d = 30 min, κ = {KAPPA})")
     fig.tight_layout()
     savefig(fig, OUT / "F3_cdeg")
     plt.close(fig)

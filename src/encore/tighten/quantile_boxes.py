@@ -53,8 +53,17 @@ class ConditionalBoxes:
     """k-NN conditional quantile sets over (heat-max, energy, dew-residual) records,
     with localized split-conformal calibration (D-033)."""
 
+    # a-priori eps allocation across the (amplitude, energy, dew) faces (D-047):
+    # any allocation summing to eps is Bonferroni-valid; weighting the budget toward
+    # the faces that drive tube margins (energy) and away from the face that rarely
+    # binds (dew) is a DESIGN choice fixed before validation, not data snooping.
+    FACE_ALLOC = (0.45, 0.45, 0.10)
+
     def __init__(self, features: np.ndarray, records: np.ndarray, eps: float = 0.1,
-                 k: int = 150, k_cal: int = 300, split_seed: int = 0):
+                 k: int = 150, k_cal: int = 300, split_seed: int = 0,
+                 face_alloc: tuple = None):
+        self.face_alloc = tuple(face_alloc) if face_alloc else self.FACE_ALLOC
+        assert abs(sum(self.face_alloc) - 1.0) < 1e-9
         if features.shape[0] != records.shape[0] or records.shape[1] != 3:
             raise ValueError("features (N,f) and records (N,3) required")
         X = np.asarray(features, dtype=float)
@@ -89,13 +98,15 @@ class ConditionalBoxes:
         return self._box_from(self.Yf[self._neighbors(self.Xf, c_feat, self.k)])
 
     def _calibrate(self, shape: Box, Yc_local: np.ndarray) -> Box:
-        """Per-face conformal inflation at level 1 - eps/3 (Bonferroni -> >= 1 - eps)."""
+        """Per-face conformal inflation at level 1 - alloc_j*eps (Bonferroni over the
+        a-priori allocation -> joint >= 1 - eps, D-047)."""
         denom = np.array([max(shape.w_Q_hi, 1e3), max(shape.E_hi, 1e5),
                           max(shape.w_D_hi, 1e-2)])
         n = Yc_local.shape[0]
-        rank = min(n - 1, int(np.ceil((1 - self.eps / 3) * (n + 1))) - 1)
         lams = []
         for j in range(3):
+            a = self.face_alloc[j] * self.eps
+            rank = min(n - 1, int(np.ceil((1 - a) * (n + 1))) - 1)
             scores = np.sort(np.maximum(Yc_local[:, j], 0.0) / denom[j])
             lams.append(max(1.0, float(scores[rank])))
         return Box(w_Q_hi=denom[0] * lams[0], E_hi=denom[1] * lams[1],

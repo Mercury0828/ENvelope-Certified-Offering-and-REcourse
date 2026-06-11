@@ -36,24 +36,23 @@ from encore.tighten.quantile_boxes import ConditionalBoxes
 from encore.tighten.tube import lqr_gain
 from encore.utils.plotting import savefig, use_style
 from encore.utils.provenance import write_manifest
+from encore.utils.stats import clopper_pearson, stable_seed
 
 OUT = REPO / "results" / "phase6"
 SEED = 20260610
 SEEDS = tuple(range(20))
 EPS = 0.1
+KAPPAS = (1.0, 0.5)     # Borg cell-a as-is, and the steadier-hall reference (D-047)
 
 
-def main():
-    use_style()
-    OUT.mkdir(parents=True, exist_ok=True)
-    p = load_params()
-    cfg = load_market_config()
+def run_kappa(kappa: float, p, cfg, K):
     pr = cfg["product"]
-    K = lqr_gain(p, r_u=1.0 / (10e3) ** 2)
-
-    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED)
+    suffix = f"_k{int(round(kappa * 100)):03d}"
+    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", scale=kappa)
     feats, recs = pool_fit.features_records()
     cb = ConditionalBoxes(feats, recs, eps=EPS, k=80, k_cal=150)
+    print(f"[kappa={kappa}] W(c) fit on {len(recs)} records (days 0-20, causal clim); "
+          "evaluation replays held-out days 21-30 (D-046)")
 
     rows = []
     for week, start in p5.WEEKS.items():
@@ -63,11 +62,15 @@ def main():
             pi_rt5 = rtm_to_5min(prices["rtm_15min"])
             rtm_h = prices["rtm_15min"].reshape(24, 4).mean(axis=1)
             base = baseline_day(p, p5.T_WB)
-            offers = p5.day_offers(p, cfg, cb, RealRecordPool(p.Q_IT_nom, seed=SEED + 1),
+            offers = p5.day_offers(p, cfg, cb,
+                                   RealRecordPool(p.Q_IT_nom, seed=SEED + 1, role="fit",
+                                                  scale=kappa),
                                    prices, weather, K)
+            b4_boxes = [cb.box(RealRecordPool.hour_features(h)) for h in range(24)]
             for seed in SEEDS:
-                rng = np.random.default_rng(hash((DATE, seed)) % 2**32)
-                pool = RealRecordPool(p.Q_IT_nom, seed=seed * 7919 + 13)
+                rng = np.random.default_rng(stable_seed(DATE, seed))
+                pool = RealRecordPool(p.Q_IT_nom, seed=stable_seed("replay", seed),
+                                      role="eval", scale=kappa)
                 activations = rng.uniform(size=24) < pr["p_act"]
                 w_day = np.zeros((24, 12))
                 dew_res = np.zeros(24)
@@ -87,6 +90,23 @@ def main():
                                      c_deg_per_Kh=pr["c_deg_per_Kh"], T_thr=pr["T_thr_C"])
                     req = r * q * 3600.0
                     act_committed = req > 0
+                    # failure attribution for the certificate claim (D-047): a delivery
+                    # failure is theory-relevant only if the hour was IN-box and the
+                    # event started inside the e0-ball (cold start)
+                    n_fail_warm = n_fail_outbox = n_fail_clean = 0
+                    if name == "B4":
+                        for h in np.where(act_committed
+                                          & (led["shortfall_J"] > 1e-6))[0]:
+                            in_box = b4_boxes[h].contains(
+                                w_day[h].max(),
+                                float(np.maximum(w_day[h], 0).sum() * p.dt_ctrl),
+                                dew_res[h])
+                            if h in run["infeasible_hours"]:
+                                n_fail_warm += 1
+                            elif not in_box:
+                                n_fail_outbox += 1
+                            else:
+                                n_fail_clean += 1
                     rows.append({
                         "week": week, "date": DATE, "seed": seed, "controller": name,
                         "sum_q_kW": float(q.sum() / 1e3),
@@ -101,6 +121,10 @@ def main():
                         "n_obligations": int(act_committed.sum()),
                         "n_delivery_failures": int((led["shortfall_J"][act_committed]
                                                     > 1e-6).sum()),
+                        "n_fail_warm_start": n_fail_warm,
+                        "n_fail_out_of_box": n_fail_outbox,
+                        "n_fail_clean_in_box": n_fail_clean,
+                        "n_warm_starts": run["infeasible_starts"],
                         "T_viol_K": float(max(0.0, run["T_j"].max() - p.T_max)),
                         "clip_events": run["clip_events"],
                         "mpc_switches": run["switches"],
@@ -119,9 +143,11 @@ def main():
                                  "profit_usd": led["profit_usd"],
                                  "shortfall_kWh": 0.0, "delivery_ratio": 1.0,
                                  "n_obligations": 0, "n_delivery_failures": 0,
+                                 "n_fail_warm_start": 0, "n_fail_out_of_box": 0,
+                                 "n_fail_clean_in_box": 0, "n_warm_starts": 0,
                                  "T_viol_K": 0.0, "clip_events": 0,
                                  "mpc_switches": 0, "infeasible_starts": 0})
-            print(f"  {week} {DATE} done ({len(SEEDS)} seeds)", flush=True)
+            print(f"  [k={kappa}] {week} {DATE} done ({len(SEEDS)} seeds)", flush=True)
 
     df = pd.DataFrame(rows)
     b1 = df[df.controller == "B1"].set_index(["date", "seed"])["profit_usd"]
@@ -132,7 +158,8 @@ def main():
     df["rebound_energy_usd"] = df.apply(
         lambda r: 0.0 if r["controller"] in ("B5", "B6")
         else r["rt_cost_usd"] - b1rt.loc[(r["date"], r["seed"])], axis=1)
-    df.to_csv(OUT / "metrics_20seed.csv", index=False)
+    df["kappa"] = kappa
+    df.to_csv(OUT / f"metrics_20seed{suffix}.csv", index=False)
 
     tab = df.groupby(["week", "controller"]).agg(
         mv_mean=("market_value_usd", "mean"), mv_std=("market_value_usd", "std"),
@@ -146,20 +173,34 @@ def main():
         switches=("mpc_switches", "mean"),
         infeas=("infeasible_starts", "mean"),
     ).reset_index()
-    tab.to_csv(OUT / "main_table.csv", index=False)
+    tab.to_csv(OUT / f"main_table{suffix}.csv", index=False)
     print("\n", tab.round(2).to_string(index=False))
 
-    # certificate validity: B4 delivery-failure rate over committed activated hours
+    # certificate validity (D-046/D-047): the Thm-2 claim covers COLD-start obligations
+    # (event begins inside the e0-ball) — its eps budget is the out-of-box probability.
+    # Warm starts are outside the theory and reported separately with attribution.
     b4 = df[df.controller == "B4"]
-    n_obl = b4["n_obligations"].sum()
-    n_fail = b4["n_delivery_failures"].sum()
-    cert = {"eps": EPS, "n_obligations": int(n_obl), "n_failures": int(n_fail),
-            "failure_rate": float(n_fail / max(n_obl, 1)),
-            "ci95_hi": float(n_fail / max(n_obl, 1)
-                             + 1.96 * np.sqrt(max(n_fail, 1)) / max(n_obl, 1))}
-    (OUT / "certificate_validity.json").write_text(json.dumps(cert, indent=2),
-                                                   encoding="utf-8")
-    print("\ncertificate validity:", cert)
+    n_obl = int(b4["n_obligations"].sum())
+    n_warm = int(b4["n_warm_starts"].sum())
+    n_fail = int(b4["n_delivery_failures"].sum())
+    n_fail_warm = int(b4["n_fail_warm_start"].sum())
+    n_fail_out = int(b4["n_fail_out_of_box"].sum())
+    n_fail_clean = int(b4["n_fail_clean_in_box"].sum())
+    n_cold = max(n_obl - n_warm, 1)
+    cold_fail = n_fail - n_fail_warm
+    ci_lo, ci_hi = clopper_pearson(cold_fail, n_cold)
+    cert = {"eps": EPS, "n_obligations": n_obl, "n_warm_starts": n_warm,
+            "n_failures_total": n_fail,
+            "failures_by_cause": {"warm_start": n_fail_warm,
+                                  "out_of_box": n_fail_out,
+                                  "clean_in_box": n_fail_clean},
+            "cold_start_failure_rate": float(cold_fail / n_cold),
+            "cold_start_ci95": [ci_lo, ci_hi],
+            "overall_failure_rate": float(n_fail / max(n_obl, 1)),
+            "method": "Clopper-Pearson exact", "kappa": kappa}
+    (OUT / f"certificate_validity{suffix}.json").write_text(json.dumps(cert, indent=2),
+                                                            encoding="utf-8")
+    print("\ncertificate validity:", json.dumps(cert, indent=2))
 
     # ---- acceptance-style assertions ----
     v = df.groupby("controller")["T_viol_K"].max()
@@ -170,8 +211,17 @@ def main():
         f"B4 ({v['B4']:.3f} K) worse than idle B1 ({v['B1']:.3f} K)"
     assert v["B4"] <= 0.5, f"B4 violation beyond intra-step tolerance: {v['B4']:.3f} K"
     assert v["B2"] > 1e-6
-    assert cert["failure_rate"] <= EPS + cert["ci95_hi"] - cert["failure_rate"] + EPS, \
-        "B4 delivery-failure rate inconsistent with eps"
+    # Thm-2 gate (D-047): no clean in-box cold-start failure may exist (that would be a
+    # broken certificate), and the data must not reject "cold-start failure prob <= eps".
+    # At kappa where B4 rationally never offers (n_obligations = 0) the gate is vacuous.
+    assert cert["failures_by_cause"]["clean_in_box"] == 0, \
+        f"CERTIFICATE BROKEN: {cert['failures_by_cause']['clean_in_box']} in-box cold-start failures"
+    if n_obl > 0:
+        assert cert["cold_start_ci95"][0] <= EPS, \
+            f"data rejects cold-start failure-rate <= eps: CP lower {cert['cold_start_ci95'][0]:.3f}"
+    else:
+        print("NOTE: B4 has zero obligations at this kappa — certificate gate vacuous "
+              "(rational no-offer regime)")
     assert (df.groupby(["week", "controller"])["date"].count()
             == 7 * len(SEEDS)).all(), "incomplete cells"
 
@@ -188,17 +238,29 @@ def main():
     ax.set_xscale("log")
     ax.set_xlabel("worst hotspot violation over the week [K] (log scale, +0.01 offset)")
     ax.set_ylabel("market value vs no-market [$/day]")
-    ax.set_title("F2 — portfolio positioning, 3 real weeks × 20 seeds\n"
+    ax.set_title(f"F2 — portfolio positioning, 3 real weeks × 20 seeds (κ = {kappa})\n"
                  "(marker: ○ mild  □ humid  △ scarcity; bars: ±1σ over seeds)")
     ax.legend(fontsize=7.5, ncol=3)
     fig.tight_layout()
-    savefig(fig, OUT / "F2_portfolio")
+    savefig(fig, OUT / f"F2_portfolio{suffix}")
     plt.close(fig)
+    return cert
 
+
+def main():
+    use_style()
+    OUT.mkdir(parents=True, exist_ok=True)
+    p = load_params()
+    cfg = load_market_config()
+    K = lqr_gain(p, r_u=1.0 / (10e3) ** 2)
+    certs = {}
+    for kappa in KAPPAS:
+        certs[kappa] = run_kappa(kappa, p, cfg, K)
     write_manifest(OUT / "provenance_F2_table.json", seed=SEED,
                    extra={"experiment": "phase6_F2_table", "seeds": len(SEEDS),
-                          "weeks": p5.WEEKS, "certificate_validity": cert})
-    print("\nphase6 F2 + main table complete.")
+                          "weeks": p5.WEEKS, "kappas": list(KAPPAS),
+                          "certificate_validity": {str(k): v for k, v in certs.items()}})
+    print("\nphase6 F2 + main table complete (both kappa scenarios).")
 
 
 if __name__ == "__main__":

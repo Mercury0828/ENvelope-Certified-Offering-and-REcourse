@@ -82,17 +82,17 @@ def _suffix_lp(p: PlantParams, spec: EnvelopeSpec, base: dict, x_t: np.ndarray, 
         if t0 + k < m_act:
             r = np.zeros(nz); r[k] = 1.0
             add(r, cap - tb.mu[k])
-    # remaining delivery: sum over remaining activated steps of (share - u/cop) dt >= remaining_J
-    act_left = [k for k in range(H) if t0 + k < m_act]
-    if act_left:
+    # remaining delivery: settlement sums the WHOLE hour (D-048), so every remaining
+    # step contributes (share - u/cop) dt toward the obligation
+    if H > 0:
         r = np.zeros(nz)
         dmargin = 0.0
-        for k in act_left:
+        for k in range(H):
             r[k] = dt / cop
             dmargin += (dt / cop) * tb.mu[k]
-        add(r, len(act_left) * dt * base["chiller_share_W"] - remaining_J - dmargin)
+        add(r, H * dt * base["chiller_share_W"] - remaining_J - dmargin)
     elif remaining_J > 1e-6:
-        return None                      # obligation unmet and window closed
+        return None                      # obligation unmet and hour closed
     # terminal readiness
     if terminal_hs is not None:
         A_T, b_T = terminal_hs
@@ -125,6 +125,11 @@ def mpc_controller(p: PlantParams, cert: dict, terminal_hs=None, tube=None):
     required = cert["q"] * m_act * dt
 
     def ctl(t, x):
+        # NOTE (audit A5, accepted approximation): delivered_J accumulates the PLANNED
+        # input; the simulator may clip u into the realized U(x) afterwards, so the
+        # internal delivery ledger can drift from the physical one when clipping binds.
+        # Settlement always uses the realized power series, so reported metrics are
+        # unaffected; only the MPC's remaining-obligation steering is approximate.
         if state["switched"]:
             return fb(t, x)
         remaining = max(0.0, required - state["delivered_J"])
@@ -137,9 +142,9 @@ def mpc_controller(p: PlantParams, cert: dict, terminal_hs=None, tube=None):
             u = fb(t, x)
         else:
             u = float(plan[0])
-        if t < m_act:
-            P = base["P_pump_W"] + u / base["cop_ref"]
-            state["delivered_J"] += (base["P_base_W"] - P) * dt
+        # delivery accrues over the whole hour (D-048), planned-u approximation (A5)
+        P = base["P_pump_W"] + u / base["cop_ref"]
+        state["delivered_J"] += (base["P_base_W"] - P) * dt
         return u
 
     return ctl, state
