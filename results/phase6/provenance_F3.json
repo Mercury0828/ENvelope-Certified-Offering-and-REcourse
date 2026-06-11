@@ -1,0 +1,22 @@
+{
+  "timestamp_utc": "2026-06-11T01:56:44.115157+00:00",
+  "git_hash": "ab8c6697d4501ddb460976eb11faab29b1d9c431",
+  "config_path": "E:\\Project-git\\ENvelope-Certified Offering and REcourse\\config\\plant.yaml",
+  "config_sha256": "ee76c5a5f4768b5cc993f92f6b8216dfb1df31c2bc2cf7b2662386fc6cb1bbb3",
+  "seed": 20260610,
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "numpy": "2.4.6",
+  "scipy": "1.17.1",
+  "experiment": "phase6_F3_cdeg",
+  "c_deg_grid": [
+    0.5,
+    1.0,
+    2.0,
+    5.0,
+    10.0,
+    20.0,
+    50.0
+  ],
+  "gamma_note": "gamma in {1.5,3}x moves nothing for B4 (zero in-box penalties); stated in audit"
+}

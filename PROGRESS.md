@@ -80,8 +80,18 @@ phase5:
     F2_shape: B2 alone on violation axis; B6 > B5 > B3 > B4 in $ at zero violations
   caveat: Borg cell volatile at hall scale + hour-of-day-only context -> small B4 $; Phase-6 levers listed in SELF_AUDIT
 phase6:
-  status: not_started
-  next_step: F1-F3 final figures + main table, 20+ seeds, context enrichment (recent-residual regime), eps/c_deg/gamma sweeps, make-figures reproducibility, provenance manifest
+  status: complete            # all acceptance pass; SELF_AUDIT written
+  completed_steps:
+    - F1_context_value        # context-free 0 kW everywhere; conditional 24.6 (d=30) / 80.5 (d=15) kW dry; dies dew>=16
+    - F2_main_table_20seeds   # 2,520 controller-days; B4 zero cert-scope violations; cert validity 2.2% <= eps
+    - F3_cdeg_supply_curve    # 225->81 kW over two decades of c_deg; mild day exits market
+    - stress_tests            # burst / dew-shift / consecutive: B4 clean, B2 +8-12 K
+    - make_figures            # Makefile + orchestrator + FIGURES_MANIFEST.json
+  fixes: [D-043 regime non-informative, D-044 robust-floor ready, D-045 idle-at-nominal]
+phase7:
+  status: not_started         # paper drafting — OWNER-SUPERVISED, not autonomous (guide §11)
+  next_step: owner kicks off drafting sessions; verify-flagged citations (guide §3) must be checked first
+autonomous_pipeline: COMPLETE  # phases 0-6 done; all gates passed (1: GO, 2: GO)
 remote: https://github.com/Mercury0828/ENvelope-Certified-Offering-and-REcourse (main; push at milestones)
 skill_js: lessons pushed (29c93a4)
 owner_todo:
@@ -131,3 +141,11 @@ owner_todo:
   weeks × 6 controllers × 3 seeds: B4 zero violations in 189 days with +$24.6/day in
   the scarcity week; B2 18 violation-days (worst +8.7 K); proto-F2 produced. All
   acceptance assertions pass; artifact #2 zipped; tagged phase5-done. Phase 6 next.
+- **2026-06-10** Phase 6 complete — the autonomous pipeline (phases 0–6) is DONE.
+  F1: context-free certification is zero everywhere, conditional recovers 24.6/80.5 kW
+  (d=30/15) in dry weather, all certification dies above dew≈16 °C on this workload.
+  Main table 20 seeds: B4 +$26/day scarcity, delivery ratio 1.00, certificate validity
+  2.2% ≤ ε; B2 worst +13.1 K. F3 degradation supply curve monotone. Stress tests clean.
+  `make figures` regenerates everything + FIGURES_MANIFEST. Fixes D-043/044/045 logged
+  (robust-floor ready states, idle-at-nominal semantics, regime non-informativeness).
+  Phase 7 (paper) is owner-supervised per guide §11.

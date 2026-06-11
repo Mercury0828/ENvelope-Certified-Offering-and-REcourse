@@ -1,0 +1,53 @@
+{
+  "timestamp_utc": "2026-06-11T01:56:50.913095+00:00",
+  "git_hash": "ab8c6697d4501ddb460976eb11faab29b1d9c431",
+  "config_path": "E:\\Project-git\\ENvelope-Certified Offering and REcourse\\config\\plant.yaml",
+  "config_sha256": "ee76c5a5f4768b5cc993f92f6b8216dfb1df31c2bc2cf7b2662386fc6cb1bbb3",
+  "seed": 20260610,
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "numpy": "2.4.6",
+  "scipy": "1.17.1",
+  "experiment": "make_figures",
+  "market_config_sha256": "53132ce6bfc44bae8af02a7033a56ae83131ab0b0afa0b88418c192d910160c2",
+  "mplstyle_sha256": "14025f4ca9df578ac37fb64e7754a5dbb24465c77b5e7896eff0d966a63e9429",
+  "generated": [
+    {
+      "script": "experiments/phase6_F1_context.py",
+      "artifacts": [
+        "results/phase6/F1_context.pdf",
+        "results/phase6/F1_context.png",
+        "results/phase6/F1_context.csv"
+      ],
+      "skipped_this_invocation": false
+    },
+    {
+      "script": "experiments/phase6_F3_cdeg.py",
+      "artifacts": [
+        "results/phase6/F3_cdeg.pdf",
+        "results/phase6/F3_cdeg.png",
+        "results/phase6/F3_cdeg.csv"
+      ],
+      "skipped_this_invocation": false
+    },
+    {
+      "script": "experiments/phase6_stress.py",
+      "artifacts": [
+        "results/phase6/stress_tests.csv",
+        "results/phase6/stress_summary.csv"
+      ],
+      "skipped_this_invocation": false
+    },
+    {
+      "script": "experiments/phase6_F2_table.py",
+      "artifacts": [
+        "results/phase6/F2_portfolio.pdf",
+        "results/phase6/F2_portfolio.png",
+        "results/phase6/main_table.csv",
+        "results/phase6/metrics_20seed.csv",
+        "results/phase6/certificate_validity.json"
+      ],
+      "skipped_this_invocation": true
+    }
+  ]
+}

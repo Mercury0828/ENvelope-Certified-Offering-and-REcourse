@@ -106,7 +106,13 @@ def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=N
     plans = []
     r_act = d_min / 60.0
     for h, c in enumerate(contexts):
-        x_ready = ready_state_for(p, c["T_dew_fc"])
+        # Ready state pre-cools only to the ROBUST condensation floor (D-044): with a
+        # dew bound w_D in the certificate, pre-cooling to the nominal floor puts the
+        # plant BELOW the robustified floor and the tightened LP is infeasible from its
+        # own ready state (caught in F1: all certified curves collapsed for dew >= 16).
+        box = boxes[h] if boxes is not None else None
+        dew_guard = box.w_D if (box is not None and kind in ("certified", "saa")) else 0.0
+        x_ready = ready_state_for(p, c["T_dew_fc"] + dew_guard)
         # Terminal readiness: V1 deliberately uses NO terminal constraint (D-041).
         # A ready-state-box terminal was tried and provably over-tightens (F-tilde = 0
         # everywhere — naive return-to-start terminals kill the product, which is
@@ -114,7 +120,6 @@ def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=N
         # readiness polygon R(q) into committed plans is Phase-5 work; until then the
         # day simulator falls back to the D-1 plan on hot starts and reports the count.
         spec = EnvelopeSpec(n_states=2, T_dew=c["T_dew_fc"], T_wb=c["T_wb"], d_min=d_min)
-        box = boxes[h] if boxes is not None else None
         F, tube = envelope_for(p, spec, x_ready, kind, box=box, K=K)
         F = max(F, 0.0)
 

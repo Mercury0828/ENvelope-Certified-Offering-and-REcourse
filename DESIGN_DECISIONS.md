@@ -456,3 +456,41 @@ forecaster's sins; they remain available for sensitivity work.
 joined per record; replayed simulation hours use REAL trace step-vectors + drawn dew
 residuals. Trace clock is not wall-aligned to prices: hour-of-day is the only shared
 coordinate (alignment caveat carried from data/README.md).
+
+## 2026-06-10 — D-043: Recent-residual regime context is non-informative on Borg-2019
+
+**Finding.** Guide 6.2 lists "recent forecast residuals" in the context vector. A
+previous-hour volatility-regime feature was implemented and measured: regime lag-1
+autocorrelation 0.22; correlation with the next hour's record channels 0.001 (max) and
+0.083 (energy) — the trace's burst process has essentially no hour-scale memory.
+**Decision.** The regime feature is kept in `residuals.py` (rich=True) but NOT used in
+F1/F2; on this workload, context value comes from hour-of-day and (dominantly) the
+dew-point forecast. Real job-schedule context (planned train/inference mix) is the
+genuine enrichment and needs operator data — future work, one sentence in the paper.
+
+## 2026-06-10 — D-044: Pre-cool only to the ROBUST condensation floor
+
+**Question.** All certified F1 curves collapsed to zero for T_dew ≥ 16 °C: the ready
+state was pre-cooled to the NOMINAL floor (T_dew + δ_cond), which sits w_D below the
+certificate's robustified floor — the tightened LP was infeasible from its own ready
+state (it cannot even hold the loop without violating the robust supply bound).
+
+**Decision.** Certified/SAA offerings pre-cool to T_dew_fc + δ_cond + w_D(c) (the
+dew-uncertainty-aware safe floor); the deterministic comparator keeps the nominal
+floor. Physically: do not bank coolth you cannot guarantee is condensation-safe under
+forecast error. Implemented in `make_offers` and F1.
+
+## 2026-06-10 — D-045: Idle hours hold the NOMINAL point; pre-cool only ahead of commitments
+
+**Question.** With D-044, the always-track-ready idle law parked plants at warmer ready
+states in humid weeks, and 20-seed sampling exposed workload-tail days where even the
+no-market B1 crossed T_max (+2.4 K) — an artifact of the idle policy, not of any
+certificate.
+
+**Decision.** Idle (uncommitted) hours hold the nominal operating point (floor-limited:
+T_in = max(T_in_nom, T_dew + δ_cond)) — exactly the D-035 baseline; the plant pre-cools
+to a ready state only during the hour BEFORE a committed hour (the D-1 pre-positioning
+plan). B1 therefore never pre-cools (its q ≡ 0), restoring baseline semantics, and idle
+tail-burst headroom is ~16.7 K again. The F2 acceptance assertion is "B4 never worse
+than idle B1, and within the 0.5 K intra-step tolerance (D-024)" — out-of-box workload
+tails that overwhelm even a non-participating plant are outside any certificate's scope.

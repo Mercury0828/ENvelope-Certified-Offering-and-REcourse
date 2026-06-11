@@ -70,14 +70,35 @@ class RealRecordPool:
     def _draw_dew(self) -> float:
         return float(np.clip(self.rng.normal(0.0, self.DEW_SIGMA_K), -4.0, 4.0))
 
-    def features_records(self) -> tuple[np.ndarray, np.ndarray]:
+    def regime_of(self, vec: np.ndarray) -> float:
+        """Volatility-regime statistic of one hour: log1p(mean |step residual| [kW])."""
+        return float(np.log1p(np.abs(vec).mean() / 1e3))
+
+    def features_records(self, rich: bool = False) -> tuple[np.ndarray, np.ndarray]:
         """(features, records) table for ConditionalBoxes: one row per trace hour,
-        dew residual from the NWP-skill model (D-042)."""
+        dew residual from the NWP-skill model (D-042). rich=True appends the PREVIOUS
+        hour's volatility regime (guide 6.2's 'recent forecast residuals' context,
+        D-043) — regimes persist hour-to-hour, which is what makes them day-ahead
+        usable as planned-job-mix proxies."""
         feats, recs = [], []
-        for vec, hod in zip(self.heat["vectors"], self.heat["hod"]):
-            feats.append([np.sin(2 * np.pi * hod / 24), np.cos(2 * np.pi * hod / 24)])
-            recs.append([vec.max(), np.maximum(vec, 0).sum() * self.dt, self._draw_dew()])
+        vecs, hods = self.heat["vectors"], self.heat["hod"]
+        for i in range(1, len(vecs)):
+            f = [np.sin(2 * np.pi * hods[i] / 24), np.cos(2 * np.pi * hods[i] / 24)]
+            if rich:
+                f.append(self.regime_of(vecs[i - 1]))
+            feats.append(f)
+            recs.append([vecs[i].max(), np.maximum(vecs[i], 0).sum() * self.dt,
+                         self._draw_dew()])
         return np.array(feats), np.array(recs)
+
+    def regime_quantiles(self, qs=(0.25, 0.75)) -> list[float]:
+        vals = [self.regime_of(v) for v in self.heat["vectors"]]
+        return [float(np.quantile(vals, q)) for q in qs]
+
+    @staticmethod
+    def hour_features_rich(hod: int, regime: float) -> np.ndarray:
+        return np.array([np.sin(2 * np.pi * hod / 24), np.cos(2 * np.pi * hod / 24),
+                         regime])
 
     @staticmethod
     def hour_features(hod: int) -> np.ndarray:
