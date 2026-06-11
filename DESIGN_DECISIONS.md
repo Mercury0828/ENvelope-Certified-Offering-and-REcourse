@@ -355,3 +355,18 @@ nondecreasing, suffix margins ≤ certificate margins at the same absolute time,
 certified fallback plan stays suffix-feasible — recursive feasibility (Thm-3 template)
 holds by construction. Still deterministic, still no online min-sup; margins are fixed
 offline numbers added to RHS vectors.
+
+## 2026-06-10 — D-034: Real-data sources (owner-directed)
+
+**Decision (owner instruction).** (a) ERCOT prices via `gridstatus` annual historical
+packages (DAM hourly + RTM **15-min settlement SPP** — the model's ΔH-accounting wants
+settlement granularity, not 5-min SCED LMP), HB_HOUSTON, 2023–2024; AS MCPC attempted,
+manual NP4-188-CD fallback stands if MIS daily docs have expired. (b) KIAH weather =
+IEM ASOS real hourly observations (TMY3 rejected: model needs real joint price/weather
+days). (c) IT traces = **Google Borg 2019 cell-a `instance_usage`** (supersedes the
+guide §9 Alibaba/Azure suggestion, owner's call): 4 random parquet shards (~2.5M rows,
+public GCS bucket over plain HTTPS, no auth needed) — a uniform row sample whose
+per-window SUM estimates the fleet profile shape (~280 rows/window, ~6% noise).
+Processed to a 1 MW hall 5-min mean/peak series with affine power map (idle 0.3 [est]).
+Caveats logged in data/README.md: peak series is a non-simultaneity upper bound
+(concurrency adjustment parked for Phase 5); trace clock is not wall-aligned to prices.
