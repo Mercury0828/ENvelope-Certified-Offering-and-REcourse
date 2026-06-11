@@ -1,0 +1,247 @@
+% =====================================================================
+% SECTION I -- INTRODUCTION (style mirrors the companion E2E-CDRO paper)
+% =====================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+\subsection{Motivation and Challenges}
+\label{subsec:motivation}
+
+Artificial intelligence (AI) data centers are becoming large, fast-growing,
+and increasingly grid-relevant electricity loads, and power systems have begun
+to demand flexibility in return for interconnection. Texas Senate Bill~6
+subjects large loads to curtailment-readiness requirements~\cite{sb6_2025},
+hyperscalers have signed demand-response agreements covering on the order of a
+gigawatt of data-center load~\cite{google_dr2025}, and a recent assessment
+finds that modest flexibility from large new loads would unlock
+interconnection capacity for tens of gigawatts in existing U.S.
+systems~\cite{norris2025rethinking}. The supply side of this bargain is
+forming on the \emph{compute} side: a field demonstration in Phoenix reduced a
+production AI cluster's power by $25\%$ for three hours by orchestrating
+workloads~\cite{colangelo2025phoenix}, and workload-level studies report
+$18$--$55\%$ power flexibility across AI job types~\cite{acun2026flexibility}.
+
+This paper develops the complementary, untapped resource: the \emph{cooling
+side} of the liquid-cooled AI facility. Direct-to-chip liquid cooling
+concentrates a substantial, controllable share of facility power in a
+chilled-water plant coupled to megajoules of coolant and facility-water
+thermal mass. Measurements on a production liquid-cooled hall show that
+relaxing the coolant supply temperature from $17$ to $25^\circ$C sheds $63\%$
+of cooling power~\cite{gheni2026liquid}; field tests a decade ago already
+exercised cooling-side demand response in air-cooled
+facilities~\cite{ghatikar2012demand}, and co-adjusting chilled-water setpoints
+with server power yields measurable regulation capacity~\cite{fu2020assessments}.
+Unlike batteries or workload curtailment, this thermal inertia is already
+paid for, and it responds in minutes.
+
+What is missing is the step from \emph{potential} to \emph{product}. A
+day-ahead market participant must commit a deliverable quantity hours before
+delivery, yet the cooling plant's deliverable depth is not a number but a set.
+Answering how an operator can commit this set safely leads to two key
+challenges.
+
+\textit{1) The deliverable depth is context-dependent and weather-coupled.}
+The anti-condensation limit places a floor on the coolant supply temperature
+just above the ambient dew point, so humidity directly truncates the
+admissible cooling reductions; workload volatility consumes the same thermal
+buffer the product sells; and the depth that can be \emph{sustained} decays
+with the product duration. A deterministic maximum commitment invites
+delivery failures and hotspot excursions, while a static worst-case
+commitment forfeits most of the value. For variable generation and
+distributed resources, the analogous problem is resolved by the do-not-exceed
+limit~\cite{zhao2015variable} and the dynamic operating
+envelope~\cite{aemo2022doe}; no counterpart exists for a thermal resource
+whose limits move with the weather.
+
+\textit{2) A day-ahead commitment must survive real-time uncertainty with
+unequal stakes.} Between commitment and delivery, the realized workload and
+dew point deviate from their forecasts, and the two consequences differ in
+kind: a delivery shortfall is a \emph{priced} event settled by penalties,
+whereas a hotspot or condensation excursion is a hardware-safety event that no
+payment compensates. A single robustness level cannot serve both: tightening
+until safety holds in the worst case destroys the offer, while sizing
+uncertainty for the average case lets safety erode exactly when the product is
+exercised. The commitment therefore needs \emph{two} guarantees with two
+different confidence levels, and a real-time layer simple enough to run on
+facility control hardware that nevertheless inherits them.
+
+\begin{table*}[t]
+\centering
+\caption{Positioning of ENCORE against representative flexibility
+characterization and commitment methods}
+\label{tab:positioning}
+\renewcommand{\arraystretch}{1.08}
+\setlength{\tabcolsep}{2.2pt}
+\scriptsize
+\begin{tabularx}{\textwidth}{
+>{\hsize=1.45\hsize\linewidth=\hsize\raggedright\arraybackslash}X
+>{\hsize=0.85\hsize\linewidth=\hsize\centering\arraybackslash}X
+>{\hsize=1.05\hsize\linewidth=\hsize\raggedright\arraybackslash}X
+>{\hsize=0.80\hsize\linewidth=\hsize\centering\arraybackslash}X
+>{\hsize=1.00\hsize\linewidth=\hsize\raggedright\arraybackslash}X
+>{\hsize=0.85\hsize\linewidth=\hsize\centering\arraybackslash}X
+}
+\toprule
+\textbf{Method category}
+& \textbf{Resource}
+& \textbf{Flexibility object}
+& \textbf{Weather coupling}
+& \textbf{Uncertainty treatment}
+& \textbf{\mbox{Delivery guarantee}} \\
+\midrule
+Data-center DR field studies~\cite{ghatikar2012demand,fu2020assessments}
+& Cooling (air)
+& Measured potential
+& No
+& None
+& No \\
+Compute-side flexibility~\cite{colangelo2025phoenix,acun2026flexibility,wierman2014opportunities}
+& IT workload
+& Demonstrated reduction
+& No
+& Operational
+& No \\
+Thermal storage retrofits~\cite{oh2025rtes,zhang2025carnot,ravi2026prosumer}
+& Added hardware
+& Storage dispatch
+& Partial
+& Scenario-based
+& No \\
+DC bidding / workload commitment~\cite{chen2023bilevel,fan2026commitment}
+& IT workload
+& Day-ahead bid
+& No
+& Stochastic program
+& Partial \\
+Buildings-to-grid reserves~\cite{vrettos2016scheduling,vrettos2016robust,gorecki2017experimental}
+& HVAC mass
+& Reserve capacity
+& Comfort band (static)
+& Robust MPC
+& Yes (reserve) \\
+DNE limits / operating envelopes~\cite{zhao2015variable,aemo2022doe}
+& Generation / DER
+& Dispatch envelope
+& No
+& Robust set
+& Yes (dispatch) \\
+TCL virtual battery / flexibility function~\cite{hao2015aggregate,junker2018characterizing,warrington2013policy}
+& TCL aggregate
+& Battery equivalent
+& No
+& Aggregate bounds
+& Partial \\
+\textbf{ENCORE (this work)}
+& \textbf{Liquid cooling loop}
+& \textbf{Exact certified envelope}
+& \textbf{Dew-point-coupled}
+& \textbf{Nested conformal sets}
+& \textbf{Two-clause certificate} \\
+\bottomrule
+\end{tabularx}
+\vspace{-5mm}
+\end{table*}
+
+\vspace{-4mm}
+\subsection{Related Work}
+\label{subsec:related}
+
+\textit{1) Data centers as grid resources.} Surveys and system studies
+established schedulable IT load as a flexibility
+source~\cite{takci2025datacentres,wierman2014opportunities}, and recent work
+demonstrates it at production scale on AI
+clusters~\cite{colangelo2025phoenix,acun2026flexibility}; bi-level bidding and
+day-ahead workload commitment with deliverability
+constraints~\cite{chen2023bilevel,fan2026commitment} bring the compute side
+into market form. All act on the IT workload. On the cooling side, early
+field studies exercised demand response in air-cooled
+facilities~\cite{ghatikar2012demand}, frequency-regulation capacity was
+obtained by co-adjusting chilled-water setpoints with server
+power~\cite{fu2020assessments}, and recent measurements quantify large, fast
+supply-temperature flexibility in production liquid-cooled
+halls~\cite{gheni2026liquid}. These works quantify \emph{potential}; none
+defines a committable product with a delivery guarantee. Thermal-storage
+retrofits~\cite{oh2025rtes,zhang2025carnot,ravi2026prosumer} monetize heat by
+adding hardware, whereas here the unmodified loop itself is the resource.
+
+\textit{2) Buildings-to-grid reserve provision.} The methodological template
+for offering thermal flexibility under uncertainty comes from commercial
+buildings: robust capacity allocation ahead of time, an online MPC layer, and
+experimental market
+demonstrations~\cite{vrettos2016scheduling,vrettos2016robust,gorecki2017experimental}.
+ENCORE descends from this line and departs where the resource does: (i) the
+feasible set's lower boundary is coupled to an exogenous stochastic variable
+(the dew point) rather than a static comfort band; (ii) the dynamics are
+minutes-scale loop physics against seconds-scale GPU heat bursts rather than
+hours-scale building mass; and (iii) the deliverable is the certified envelope
+object itself rather than a reserve schedule.
+
+\textit{3) Certifying the maximum offer.} Do-not-exceed limits for variable
+resources~\cite{zhao2015variable}, dynamic operating envelopes for
+distribution-connected resources~\cite{aemo2022doe}, aggregate virtual
+batteries for thermostatic loads~\cite{hao2015aggregate}, flexibility
+functions~\cite{junker2018characterizing}, and policy-based
+reserves~\cite{warrington2013policy} all certify an admissible operating
+region rather than a point forecast. ENCORE is the thermal-resource member of
+this family. Within it, the combination of an \emph{exact} deliverability
+polyhedron, a context-conditional (conformal~\cite{lei2018distribution})
+uncertainty description, and a settlement that prices the residual delivery
+risk is, to our knowledge, new. Relative to the companion contextual robust
+\emph{control} work~\cite{shen2026cdro}, which optimizes operating cost
+through an online min--sup layer, the decision object here is a market
+commitment with a certificate: robustness acts offline as constraint
+tightening of an envelope, and the market layer (product, settlement,
+penalty) is part of the model. Table~\ref{tab:positioning} summarizes the
+positioning.
+
+\vspace{-3mm}
+\subsection{Our Contributions}
+\label{subsec:contributions}
+
+Our goal is to let a liquid-cooled AI data center sell its cooling-side
+thermal inertia in a day-ahead market with guarantees that survive to
+real-time delivery. A deterministic offer is unsafe and a static worst-case
+offer is worthless, so the offer must come from a context-dependent envelope
+robustified at two confidence levels with different stakes. The main
+contributions are as follows.
+
+\begin{itemize}
+\item We formulate cooling-side flexibility as a day-ahead offering problem
+with an explicit product, settlement, and penalty structure. The formulation
+couples the (offer, duration) product to hotspot safety, an anti-condensation
+supply-temperature floor, actuator limits, and whole-hour energy metering,
+under joint workload and dew-point uncertainty.
+
+\item We characterize the deliverable (offer, duration) set \emph{exactly} as
+a context-dependent polyhedron, the certified flexibility envelope, and
+derive a closed-form weather-coupled virtual-battery equivalent whose
+capacity, power limits, and leakage are functions of the dew-point forecast.
+We further show a structural property of energy-settled thermal products:
+consecutive full-depth delivery is infeasible, so certified commitments must
+be spaced.
+
+\item We develop a two-stage offering method with end-to-end guarantees.
+Nested context-conditional disturbance sets tighten the envelope offline
+through exact tube margins: a safety set, never traded for revenue, and a
+delivery set whose level is a product design variable priced by the
+settlement. A certified fallback policy underwrites the real-time layer. We prove that any
+offer inside the tightened envelope satisfies thermal safety on the safety
+set and meets its settled obligation at confidence $1-\epsd$, with expected
+penalties bounded.
+
+\item We validate the certificate end-to-end on measured data only: a
+2.0-million-worker GPU-cluster trace with a causal job-aware day-ahead
+forecast, archived numerical-weather-prediction dew-point forecasts, and ten
+2024 ERCOT weeks. Across $1{,}400$ controller-days the certified participant
+incurs zero in-domain violation episodes (against $229$ violation-days for
+the uncertified envelope), delivery failures stay inside the priced budget,
+and day-ahead workload information alone raises a real hall's certifiable
+offer by $83\%$.
+\end{itemize}
+
+The remainder of this paper is organized as follows.
+Section~\ref{sec:problem_formulation} presents the system model and the
+offering problem. Section~\ref{sec:methodology} develops the certified
+envelope, the nested robustification, and the guarantees.
+Section~\ref{sec:experimental_evaluation} gives the experimental setup and
+results. Section~\ref{sec:conclusion} concludes.

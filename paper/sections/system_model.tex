@@ -1,0 +1,311 @@
+% =====================================================================
+% II. SYSTEM MODEL AND DAY-AHEAD OFFERING FORMULATION
+% =====================================================================
+\section{System Model and Day-Ahead Offering Formulation}
+\label{sec:problem_formulation}
+This section models the liquid-cooled hall as a committable grid resource. We
+first describe the thermal architecture and its dynamics with a virtual heat
+input. We then define the cooling demand, the (offer, duration) product and
+its settlement, and the safety constraints that bound the feasible
+flexibility. Finally, we state the offering problem under uncertainty that
+motivates the certified envelope of Section~\ref{sec:methodology}.
+
+% ---- Fig. 1: architecture + market timeline (TikZ) ----
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\scriptsize, >=Stealth,
+  box/.style={draw, rounded corners=1pt, align=center, inner sep=2.5pt},
+  lbl/.style={align=center, inner sep=1pt}]
+  % thermal chain (bottom row)
+  \node[box, fill=red!8]    (gpu)  {GPU racks\\ $\Tj$,\ $\bar Q{+}w_t$};
+  \node[box, fill=blue!8, right=6mm of gpu]  (loop) {coolant loop\\ $\Tw$};
+  \node[box, fill=cyan!8, right=6mm of loop] (fac)  {facility water\\ $\Tf$};
+  \node[box, fill=gray!12, right=6mm of fac] (chil) {chiller\\ $\Pcool_t$};
+  \draw[->] (gpu) -- node[above, lbl]{$h_{\mathrm{jw}}$} (loop);
+  \draw[->] (loop) -- node[above, lbl]{$\uext_t$} (fac);
+  \draw[->] (fac) -- node[above, lbl]{$\urej_t$} (chil);
+  % constraint labels (below chain)
+  \node[lbl, below=1.5mm of gpu, text=red!60!black]  {$\Tj \le \Tmax$};
+  \node[lbl, below=1.5mm of loop, text=blue!60!black]
+    {supply $\ge \Tdew{+}\delta_{\mathrm{c}}$};
+  \node[lbl, below=1.5mm of fac]  {$\Tf \le \Tf^{\max}$};
+  % top row: context + market
+  \node[box, fill=yellow!12, text width=21mm, above=7mm of gpu.north west,
+        anchor=south west] (ctx)
+    {context $c$:\\ NWP $\Tdew$ forecast,\\ job-aware load forecast};
+  \node[box, fill=green!8, text width=39mm, above=7mm of chil.north east,
+        anchor=south east] (mkt)
+    {day-ahead market:\\ offer $(q_h,d)$ $\to$ activation $r_h$\\
+     $\to$ whole-hour settlement};
+  \draw[->, dashed] (ctx.east) -- (mkt.west);
+  \draw[->, dashed] (chil.north) -- node[right, lbl, pos=0.45]
+    {metered $\Pcool$ vs.\ $\Pbase$} (mkt.south -| chil.north);
+\end{tikzpicture}
+\caption{Grid-interactive liquid-cooled hall as a committable resource. The
+virtual inputs $(\uext_t,\urej_t)$ move heat along the chain; the operator
+commits an (offer, duration) pair day-ahead from the context-dependent
+envelope and is settled on metered whole-hour cooling energy.}
+\label{fig:phys_arch}
+\vspace{-3mm}
+\end{figure}
+
+\vspace{-4mm}
+\subsection{Liquid-Cooled Hall with a Virtual Heat Input}
+\label{subsec:arch}
+
+We consider the thermal path of a hall with $1$\,MW of IT load served by
+direct-to-chip liquid cooling, as depicted in Fig.~\ref{fig:phys_arch}: GPU
+cold plates reject heat into a coolant loop, a coolant distribution unit
+passes it to a facility-water loop, and a chiller plant rejects it to ambient.
+The system is viewed from two sides. Thermally, the hall must keep the
+silicon-adjacent hotspot and the loop temperatures within limits;
+electrically, the chiller plant is a controllable load whose temporary
+reduction is the product being sold.
+
+The thermal state at control step $t$ is
+\begin{equation}
+x_t = [\Tj[t],\; \Tw[t],\; \Tf[t]]^\top,
+\end{equation}
+collecting the hotspot proxy, the coolant-loop temperature, and the
+facility-water temperature. The control vector is the pair of \emph{virtual
+heat inputs}
+\begin{equation}
+u_t = [\uext_t,\; \urej_t]^\top,
+\end{equation}
+where $\uext_t$ is the heat-extraction rate from the coolant loop into the
+facility loop and $\urej_t$ the heat-rejection rate of the chiller plant. The
+virtual inputs absorb the operator's physical handles (supply-temperature
+setpoint, flow) into heat-rate variables. This choice renders the dynamics
+linear and confines all nonlinearity to a state-dependent input set defined
+below.
+
+\begin{remark}[Realization layer]\label{rem:realization}
+A commanded extraction rate $\uext$ is realized by the supply-temperature
+setpoint $T^{\mathrm{in}} = \Tw - \uext/(\mdot c_p)$ at the operating flow,
+and a rejection rate $\urej$ by the chiller load setpoint. The input set
+\eqref{eq:Ux} is exactly the image of the physical actuator ranges under this
+map, so every virtual command certified below corresponds to an admissible
+setpoint pair; bilinear flow--temperature coupling, which the companion
+control formulation must carry explicitly~\cite{shen2026cdro}, never enters
+the commitment problem.
+\end{remark}
+
+The disturbance is
+\begin{equation}
+\xi_t = [w_t,\; \delta^{\mathrm{dew}}_t]^\top ,
+\end{equation}
+where $w_t$ is the residual of the IT heat load around its day-ahead forecast
+$\bar Q$, driven by bursty, non-Gaussian AI workload dynamics, and
+$\delta^{\mathrm{dew}}_t$ is the dew-point forecast error, which shifts the
+anti-condensation boundary. The day-ahead context vector
+\begin{equation}
+c_h = \bigl[\Tdew^{\mathrm{fc}},\ \text{workload-forecast features}\bigr]
+\label{eq:context}
+\end{equation}
+collects what is knowable at the offering deadline; every object downstream
+(envelope, disturbance sets, offer) is a function of $c_h$.
+
+\vspace{-3mm}
+\subsection{Thermal Dynamics}
+\label{subsec:dynamics}
+
+The hall is modeled by lumped energy balances on the three nodes.
+
+\emph{Hotspot node.} The silicon-adjacent metal has small capacitance
+$C_\mathrm{j}$ (time constant tens of seconds), responding to workload bursts
+much faster than the loop can react:
+\begin{equation}
+C_\mathrm{j}\,\frac{d\Tj}{dt} = \bar Q + w(t)
+ - h_{\mathrm{jw}}\bigl(\Tj(t)-\Tw(t)\bigr),
+\label{eq:chip}
+\end{equation}
+where $h_{\mathrm{jw}}$ is the junction-to-coolant heat-transfer coefficient.
+
+\emph{Coolant-loop node.} The loop's fluid inventory provides the first
+tranche of thermal mass (time constant of minutes):
+\begin{equation}
+C_\mathrm{w}\,\frac{d\Tw}{dt} = h_{\mathrm{jw}}\bigl(\Tj(t)-\Tw(t)\bigr)
+ - \uext(t).
+\label{eq:loop}
+\end{equation}
+
+\emph{Facility-water node.} The facility loop provides the second, larger
+tranche (time constant near an hour), and is what makes a half-hour product
+physically possible:
+\begin{equation}
+C_\mathrm{f}\,\frac{d\Tf}{dt} = \uext(t) - \urej(t).
+\label{eq:facility}
+\end{equation}
+
+All nonlinearity is confined to the state-dependent input set
+\begin{equation}
+\mathcal{U}(x;c)=\Bigl\{u:
+\begin{aligned}
+&0 \le \uext \le \mdot c_p\bigl(\Tw-\vartheta(c)\bigr),\\
+&\uext \le \mdot[f] c_p\bigl(\Tw-\Tf-\delta_{\mathrm{hx}}\bigr),\
+0 \le \urej \le \bar u^{\mathrm{rej}}
+\end{aligned}
+\Bigr\},
+\label{eq:Ux}
+\end{equation}
+which is \emph{affine} in $x$ for a fixed context. The first bound carries
+the model's signature constraint: the supply-temperature floor
+\begin{equation}
+\vartheta(c) = \max\bigl\{\vartheta_{\min},\ \Tdew^{\mathrm{fc}}
+ + \delta_{\mathrm{c}}\bigr\}
+\label{eq:floor}
+\end{equation}
+sits above the dew point to preclude condensation on server boards, so
+humidity directly truncates the admissible heat extraction. The second bound
+is the passive heat-exchanger coupling between the loops, and the third the
+chiller equipment limit. Sub-minute chip-level bursts are summarized by
+intra-interval peak statistics within $w_t$; hardware frequency scaling
+remains the ultimate backstop beyond all modeled uncertainty sets and appears
+nowhere else in the model.
+
+For certification, \eqref{eq:chip}--\eqref{eq:facility} are discretized
+exactly (zero-order hold) at the control interval $\Delta t=5$\,min, giving
+$x_{t+1}=Ax_t+Bu_t+E(\bar Q + w_t)$; closed-loop simulation integrates the
+same model at a $30$\,s step. Parameters (Table~\ref{tab:params}) are
+calibrated so the plant reproduces the measured supply-temperature
+flexibility of a production liquid-cooled hall ($17\to 25^\circ$C shedding
+$63\%$ of cooling power~\cite{gheni2026liquid}), with loop, facility, and
+junction time constants of $5$--$8$\,min, ${\sim}50$\,min, and ${\sim}24$\,s.
+
+% ---- Table: plant parameters ----
+\begin{table}[t]
+\centering
+\caption{Plant parameters of the calibrated $1$\,MW$_{\mathrm{IT}}$ hall.}
+\label{tab:params}
+\setlength{\tabcolsep}{3.5pt}
+\scriptsize
+\begin{tabular}{llll}
+\toprule
+\textbf{Symbol} & \textbf{Value} & \textbf{Symbol} & \textbf{Value} \\
+\midrule
+$C_\mathrm{j}$ & $1.0$\,MJ/K & $\Tmax$ & $85^\circ$C \\
+$C_\mathrm{w}$ & $25$\,MJ/K & $\Tf^{\max}$ & $35^\circ$C \\
+$C_\mathrm{f}$ & $60$\,MJ/K & $\delta_{\mathrm{c}}$ & $2$\,K \\
+$h_{\mathrm{jw}}$ & $40$\,kW/K & $\vartheta_{\min}$ & $18^\circ$C \\
+$\mdot c_p$ & $54.6$\,kW/K & $\bar u^{\mathrm{rej}}$ & $1.3$\,MW \\
+$\delta_{\mathrm{hx}}$ & $2$\,K & $\uext$ ramp & $200$\,kW/min \\
+$\eta$ (ref.\ COP) & supply-sweep fit & $\Delta t$ / $\dH$ & $5$\,min / $1$\,h \\
+\bottomrule
+\end{tabular}
+\vspace{-3mm}
+\end{table}
+
+\vspace{-3mm}
+\subsection{Cooling Demand, Product, and Settlement}
+\label{subsec:product}
+
+Under a frozen-efficiency surrogate, the metered cooling demand is affine in
+the rejection rate,
+\begin{equation}
+\Pcool_t = P_0 + \urej_t/\eta,
+\label{eq:coolpower}
+\end{equation}
+where $\eta$ is the chiller coefficient of performance at the reference point
+and $P_0$ collects pumping. The surrogate freezes the weather dependence of
+plant efficiency within the hour; its drift enters the energy and degradation
+terms, not the certificate. The no-participation trajectory defines the
+exogenous baseline $\Pbase$.
+
+For each hour $h$ the operator offers a pair $(q_h, d)$: \emph{if activated,
+reduce cooling power by up to $q_h$ below baseline, sustainable for up to $d$
+minutes within the hour}. The duration $d\in\{15,30,60\}$\,min is a product
+parameter fixed per market (we evaluate $d=30$); activation is exogenous with
+probability $p_{\mathrm{act}}$ and activated fraction $r_h\in[0,1]$,
+$r_h\cdot 60\le d$. The product is stylized: it maps loosely onto
+short-duration reserve and emergency products without encoding any single
+tariff, and it is the only institutional element in the model; all other
+market realism enters through data. Hour $h$ settles on metered energy
+against the baseline:
+\begin{equation}
+\begin{aligned}
+\text{revenue} &= \picap_h q_h \dH,\qquad
+s_h = \Bigl[r_h q_h \dH - \!\!\sum_{t\in h}(\Pbase-\Pcool_t)\Delta t\Bigr]_+,\\
+\text{penalty} &= \gamma\,\picap_h\, s_h,\qquad \gamma \ge 1,
+\end{aligned}
+\label{eq:settlement}
+\end{equation}
+plus real-time energy deviations at the spot price and a degradation cost
+$c_{\mathrm{deg}}\!\int[\Tj(t)-T_{\mathrm{thr}}]_+dt$ that prices sustained
+hotspot elevation. Whole-hour metering in \eqref{eq:settlement} is
+load-bearing: recovery \emph{within} the activated hour cancels delivered
+energy, so certifying the activation window alone over-promises; the envelope
+of Section~\ref{sec:methodology} certifies both the window depth and the hour
+energy.
+
+\begin{remark}[Baseline]\label{rem:baseline}
+The baseline is exogenous and known. Baseline manipulation is a documented
+phenomenon in demand-response programs~\cite{chao2011demand}; it is orthogonal
+to deliverability and excluded by construction, as in the buildings-reserves
+literature~\cite{vrettos2016robust}.
+\end{remark}
+
+\vspace{-3mm}
+\subsection{Operational Constraints and the Flexibility Envelope}
+\label{subsec:constraints}
+
+The plant must satisfy the following at every step.
+
+\emph{C1. Hotspot safety:} $\Tj[t] \le \Tmax$, with $\Tmax=85^\circ$C the
+lumped proxy below silicon throttling.
+
+\emph{C2. Anti-condensation (hard, safety-critical):} the floor
+\eqref{eq:floor} inside $\mathcal{U}(x;c)$; an excursion risks condensate on
+server boards.
+
+\emph{C3. Facility limit:} $\Tf[t] \le \Tf^{\max}$, protecting downstream
+equipment.
+
+\emph{C4. Actuation:} $u_t \in \mathcal{U}(x_t;c)$ with ramp limits on
+$\uext$.
+
+A commitment $(q,d)$ is \emph{deliverable from state $x_0$ in context $c$} if
+some admissible input sequence satisfies C1--C4 together with the two product
+clauses: window depth $\Pcool_t \le \Pbase - q$ during the activation window,
+and whole-hour energy per \eqref{eq:settlement}. The \emph{flexibility
+envelope}
+\begin{equation}
+F(x,c) = \max\bigl\{q : (q,d)\ \text{deliverable from}\ x\ \text{in}\ c\bigr\}
+\label{eq:envelope_def}
+\end{equation}
+is the maximal committable depth. It shrinks with humidity through
+\eqref{eq:floor}, with workload volatility through the buffer that bursts
+consume, and with duration $d$; a fixed-margin commitment is therefore either
+unsafe or wasteful across contexts. This is the dilemma that motivates
+context-dependent robustness in the companion control
+problem~\cite{shen2026cdro}, transposed here to the market layer.
+
+\vspace{-4mm}
+\subsection{Day-Ahead Offering Problem Under Uncertainty}
+\label{subsec:problem}
+
+At the day-ahead deadline the operator chooses commitments
+$\{q_h\}_{h=1}^{24}$ knowing only the context \eqref{eq:context}; on the
+operating day, activations arrive and the realized disturbances
+$\xi_t$ act on the plant under a causal real-time policy $\pi$. The ideal
+stochastic offering problem is
+\begin{equation}
+\begin{aligned}
+\max_{\{q_h\},\,\pi}\ \
+&\mathbb{E}_{\xi\sim\mathbb{P}^*}\Bigl[\textstyle\sum_h
+ \picap_h q_h \dH - \gamma\,\picap_h s_h - C^{\mathrm{rt}}_h - D_h \Bigr]\\
+\text{s.t.}\ \ & x_{t+1}=Ax_t+Bu_t+E(\bar Q+w_t),\quad u_t=\pi_t(\cdot),\\
+& \text{C1--C4 for all } t,
+\end{aligned}
+\label{eq:stochastic_opt}
+\end{equation}
+where $C^{\mathrm{rt}}_h$ and $D_h$ are the real-time energy and degradation
+costs and $\mathbb{P}^*$ is the unknown joint law of workload and dew-point
+residuals. The problem is difficult for three reasons: $\mathbb{P}^*$ is
+unknown, nonstationary, and context-dependent; the safety constraints C1--C3
+admit no monetary compensation, while shortfalls $s_h$ are merely priced, so
+the two uncertainty consequences carry different stakes; and the commitment
+is made hours before delivery, so all robustness must be decided from the
+context alone. Section~\ref{sec:methodology} resolves this with a certified
+envelope robustified at two nested confidence levels.
+
+\vspace{-2mm}

@@ -1,804 +1,140 @@
-% ENCORE — IEEE Transactions on Smart Grid submission
-% Budget: 10–10.5 pages total, <=30 references (owner constraint, 2026-06-11).
 \documentclass[journal]{IEEEtran}
 
-\usepackage{amsmath,amssymb,amsthm}
+% ---- Packages (mirrors the companion E2E-CDRO paper's preamble) ----
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsthm}
+\usepackage{algorithmic}
+\usepackage{algorithm}
 \usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage[caption=false]{subfig}
+\usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{url}
+\usepackage{bm}
+\usepackage{tikz}
+\usepackage{subcaption}
+\usepackage{tabularx}
 
-\graphicspath{{../results/phase6/}}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
 
-\newtheorem{theorem}{Theorem}
-\newtheorem{lemma}{Lemma}
-\newtheorem{proposition}{Proposition}
-\newtheorem{remark}{Remark}
+\newtheorem{definition}{Definition}
 \newtheorem{assumption}{Assumption}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{remark}{Remark}
 
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,backgrounds}
+
+% ---- Custom commands ----
+\usepackage{xparse}
+\NewDocumentCommand{\Tj}{o}{T_{\mathrm{j}\IfValueT{#1}{,#1}}}
+\NewDocumentCommand{\Tw}{o}{T_{\mathrm{w}\IfValueT{#1}{,#1}}}
+\NewDocumentCommand{\Tf}{o}{T_{\mathrm{f}\IfValueT{#1}{,#1}}}
+\NewDocumentCommand{\Tdew}{o}{T_{\mathrm{dew}\IfValueT{#1}{,#1}}}
+\NewDocumentCommand{\mdot}{o}{\dot{m}\IfValueT{#1}{_{#1}}}
+
+\newcommand{\Tmax}{T_{\max}}
 \newcommand{\Ft}{\widetilde{F}}
 \newcommand{\Wsafe}{\mathcal{W}^{\mathrm{s}}}
 \newcommand{\Wdel}{\mathcal{W}^{\mathrm{d}}}
 \newcommand{\epss}{\varepsilon_{\mathrm{s}}}
 \newcommand{\epsd}{\varepsilon_{\mathrm{d}}}
 \newcommand{\dH}{\Delta_{\mathrm{H}}}
-\newcommand{\Tdew}{T_{\mathrm{dew}}}
-\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\uext}{u^{\mathrm{ext}}}
+\newcommand{\urej}{u^{\mathrm{rej}}}
+\newcommand{\Pcool}{P^{\mathrm{cool}}}
+\newcommand{\Pbase}{P^{\mathrm{b}}}
+\newcommand{\picap}{\pi^{\mathrm{cap}}}
+
+% ---- Page-reduction (TSG 10-page limit), as in the companion paper ----
+\everydisplay\expandafter{\the\everydisplay\small}
+\captionsetup{font=small}
+\setlength{\textfloatsep}{10pt plus 2pt minus 4pt}
 
 \begin{document}
 
-\title{Certified Cooling-Side Flexibility for Liquid-Cooled AI Data Centers:
-Context-Dependent Envelopes with End-to-End Delivery Guarantees}
+\title{{\fontsize{22}{24}\selectfont ENCORE: Envelope-Certified Offering of
+Cooling-Side Flexibility for Grid-Interactive AI Data Centers}}
 
-\author{Jiachen~Shen% <-- author block to be completed by owner
-\thanks{Manuscript received \todo{date}. The author is with \todo{affiliation}.}}
+\author{%
+Jiachen Shen,~\IEEEmembership{Student Member,~IEEE,}
+Jian Shi,~\IEEEmembership{Senior Member,~IEEE,}
+Chenye Wu,~\IEEEmembership{Senior Member,~IEEE,}\\
+Dan Wang,~\IEEEmembership{Senior Member,~IEEE,}
+and Zhu Han,~\IEEEmembership{Fellow,~IEEE}
+\vspace{-10mm}%
+}
 
 \maketitle
 
+% =====================================================================
+% ABSTRACT
+% =====================================================================
 \begin{abstract}
-The thermal inertia of a liquid-cooled data center is a fast, capex-free source
-of grid flexibility, but no existing scheme lets an operator \emph{commit} it in
-a day-ahead market: the deliverable depth depends on weather, workload, and the
-plant's thermal state, and a commitment that cannot be honored becomes either a
-reliability penalty or a silicon-temperature excursion. This paper introduces
-the \emph{certified flexibility envelope}: an exact polyhedral characterization
-of the set of (offer, duration) pairs a liquid-cooled facility can deliver
-under joint hotspot and condensation constraints, parameterized by a context
-vector of dew-point and workload forecasts, with a closed-form weather-coupled
-virtual-battery equivalent. A two-stage scheme offers from a robustified
-envelope: nested context-conditional disturbance sets --- a safety set that is
-never traded for revenue and a delivery set whose excess risk the settlement
-prices --- tighten the envelope offline, and a certified fallback policy
-underwrites a deliberately simple real-time controller. Any offer inside the
-tightened envelope satisfies thermal safety on the safety set and a delivery
-guarantee at a chosen confidence on the delivery set. A case study built
-entirely on measured data --- a 2.0-million-worker GPU-cluster trace, archived
-day-ahead weather forecasts, and ten 2024 ERCOT weeks --- validates both
-clauses out of sample (zero in-domain violations in 1{,}400 controller-days)
-and quantifies the product: day-ahead workload information alone moves a real
-hall's certifiable offer from 41 to 75\,kW per MW of IT load, and the
-certified participant earns \$97/day per MW during scarcity weeks with zero
-capital expenditure and zero impact on compute.
+Liquid-cooled artificial intelligence (AI) data centers couple a large,
+controllable cooling load to megajoules of thermal mass, yet no existing
+scheme lets an operator \emph{commit} this flexibility in a day-ahead market:
+the deliverable depth moves with humidity, workload, and thermal state, and a
+commitment that cannot be honored becomes either a reliability penalty or a
+silicon-temperature excursion. In this paper, we propose ENCORE, an
+envelope-certified offering method for grid-interactive liquid cooling.
+ENCORE characterizes the set of deliverable (offer, duration) pairs exactly as
+a context-dependent polyhedron under joint hotspot and anti-condensation
+constraints, with a closed-form weather-coupled virtual-battery equivalent.
+Two nested context-conditional disturbance sets robustify the envelope
+offline: a safety set that is never traded for revenue, and a delivery set
+whose residual risk the settlement prices. A certified fallback policy then
+underwrites a deliberately simple real-time controller. We prove that any
+offer inside the tightened envelope satisfies thermal safety on the safety
+set and meets its settled energy obligation at confidence $1-\epsd$. A case
+study built entirely on measured data (a 2.0-million-worker GPU-cluster
+trace, archived day-ahead weather forecasts, and ten 2024 ERCOT weeks)
+validates both clauses out of sample, with zero in-domain violation episodes
+across $1{,}400$ controller-days. Day-ahead workload information alone raises a real hall's
+certifiable offer from $40.7$ to $74.6$\,kW per MW of IT load, and the
+certified participant earns \$$97$/day per MW during a scarcity week with zero
+capital expenditure and zero impact on compute workloads.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Data centers, demand response, flexibility envelope, liquid cooling, day-ahead
-markets, conformal prediction, robust control.
+AI data centers, liquid cooling, demand response, flexibility envelope,
+day-ahead markets, conformal prediction, smart grids.
 \end{IEEEkeywords}
 
-% =====================================================================
-\section{Introduction}\label{sec:intro}
-
-\IEEEPARstart{A}{rtificial-intelligence} data centers are the fastest-growing
-load on many power systems, and the grid is beginning to demand flexibility in
-return for interconnection. Texas Senate Bill~6 (2025) subjects large loads to
-curtailment-readiness requirements~\cite{sb6}; Google has signed demand-response
-agreements covering on the order of a gigawatt of data-center load~\cite{googledr};
-and a recent assessment finds that modest flexibility from large new loads
-would unlock interconnection capacity for tens of gigawatts in existing U.S.
-systems~\cite{norris25}. The supply side of this bargain is forming on the
-\emph{compute} side: a field demonstration in Phoenix reduced a production AI
-cluster's power by 25\% for three hours by orchestrating workloads
-\cite{colangelo25}, and workload-level studies report 18--55\% power
-flexibility across AI job types~\cite{acun26}.
-
-This paper develops the complementary, untapped resource: the \emph{cooling
-side} of the new liquid-cooled AI facility. Direct liquid cooling concentrates
-30--40\% of facility power in a chilled-water plant coupled to megajoules of
-coolant thermal mass; measurements on a production liquid-cooled hall show
-that relaxing the supply temperature from 17 to 25\,$^\circ$C sheds 63\% of
-cooling power~\cite{gheni26}. Field tests a decade ago already exercised
-cooling-side demand response in air-cooled facilities~\cite{ghatikar12}, and
-co-controlling chilled-water setpoints with server power yields measurable
-regulation capacity~\cite{fu20}. Thermal inertia is real, fast, and --- unlike
-batteries or workload curtailment --- already paid for.
-
-What is missing is the step from \emph{potential} to \emph{product}. A
-day-ahead market participant must commit a deliverable quantity hours before
-delivery, yet the cooling plant's deliverable depth is not a number: it is a
-set that shrinks with humidity (a condensation floor on supply temperature
-binds in humid climates), with workload volatility (bursts consume the same
-thermal buffer the product sells), and with the duration the product must
-sustain. Committing the deterministic maximum invites delivery failures and
-hotspot excursions; committing a static worst case forfeits most of the value.
-The object that resolves this --- the analogue of a do-not-exceed
-limit~\cite{zhao15} or a dynamic operating envelope~\cite{aemo22} for a
-thermal resource whose limits move with the weather --- has not been
-constructed.
-
-We construct it. The contributions are three:
-
-\emph{C1 (Object).} The \textbf{certified flexibility envelope}: an exact
-polyhedral characterization of the deliverable (offer $q$, duration $d$) set
-of a liquid-cooled facility under joint hotspot and condensation constraints,
-parameterized by a context vector (dew-point and workload forecasts), with a
-closed-form \emph{weather-coupled virtual battery} equivalent --- a battery
-whose capacity is a function of the weather (Sec.~\ref{sec:envelope}).
-
-\emph{C2 (Method).} A \textbf{two-stage offering scheme with end-to-end
-guarantees}: day-ahead offers constrained to an envelope tightened by
-\emph{nested} context-conditional disturbance sets --- a safety set, never
-traded for revenue, and a delivery set whose excess risk the settlement
-prices --- and a real-time layer in which a certified fallback policy
-underwrites a deliberately simple controller. Theorem~\ref{thm:main}: any
-offer inside the tightened envelope satisfies thermal safety for all
-disturbances in the safety set and meets its settled energy obligation at
-confidence $1-\epsd$ (Sec.~\ref{sec:offering}).
-
-\emph{C3 (Evidence).} A \textbf{fully measured-data case study} --- GPU-cluster
-workload trace, archived day-ahead weather forecasts, ten seasons-spanning 2024
-ERCOT weeks --- that validates both theorem clauses out of sample and
-quantifies the economics, including a finding with direct operational meaning:
-day-ahead \emph{workload information} (the operator's own running-job state)
-nearly doubles the certifiable offer of a real hall
-(Sec.~\ref{sec:casestudy}).
-
-This work descends from the buildings-to-grid reserve literature
-\cite{vrettos16tse,vrettos16tps,gorecki17} and differs where the resource
-does: the feasible set's lower boundary is coupled to an exogenous stochastic
-variable (dew point) rather than a static comfort band; loop dynamics are
-minutes-scale against seconds-scale GPU heat bursts rather than hours-scale
-building mass; and the certified-envelope object itself, rather than a
-reserve schedule, is the deliverable. Relative to a companion work on
-distributionally robust \emph{control} of the same plant class (E2E-CDRO,
-under review~\cite{e2ecdro}), the present paper solves the \emph{offering}
-problem: the decision object is a market commitment with a certificate;
-robustness acts offline as constraint tightening of an envelope rather than
-online in a min--sup controller; and the market layer (product, settlement,
-penalties) is part of the model rather than absent.
+\input{sections/introduction}
+\input{sections/system_model}
+\input{sections/methodology}
+\input{sections/experiments}
 
 % =====================================================================
-\section{Related Work}\label{sec:related}
-
-\emph{Data centers as grid resources.} Surveys and system studies established
-schedulable IT load as a flexibility source~\cite{takci25,wierman14}; recent
-work demonstrates it at production scale on AI clusters
-\cite{colangelo25,acun26}. All act on compute. Early field studies
-\cite{ghatikar12} exercised cooling-side DR in air-cooled facilities
-(2--8-min chiller/CRAC response, up to 25\% site load in tests), and
-\cite{fu20} co-adjusted server frequency and chilled-water supply temperature
-for frequency regulation. These quantify potential; none defines a committable
-product with a delivery guarantee, which is the gap this paper fills.
-
-\emph{Liquid-cooled thermal flexibility.} Measurements on production
-liquid-cooled halls quantify large, fast cooling-power modulation through
-supply-temperature control~\cite{gheni26}. Thermal-storage retrofits ---
-reusable thermal energy storage~\cite{oh25}, Carnot batteries~\cite{zhang25},
-heat-prosumer integration~\cite{ravi26} --- add hardware to monetize heat. We
-differ structurally: the loop itself, unmodified, is the resource; a buffer
-tank appears in our framework only as a sensitivity parameter.
-
-\emph{Committing flexible load day-ahead.} Bi-level bidding for data centers
-\cite{chen23} and day-ahead workload commitment with deliverability
-constraints~\cite{fanzhao26} establish the commitment-and-deliverability
-frame for the compute side; we adopt the frame and change the resource, which
-changes the mathematics (state-dependent input sets, weather-coupled
-constraints, thermal dynamics).
-
-\emph{Certifying the maximum offer.} Our envelope is the thermal-resource
-member of a family: do-not-exceed limits for variable resources
-\cite{zhao15}, dynamic operating envelopes for distribution-connected DER
-\cite{aemo22}, aggregate virtual batteries for thermostatic loads
-\cite{hao15}, flexibility functions~\cite{junker18}, and policy-based
-reserves~\cite{warrington13}. The buildings-to-grid line
-\cite{vrettos16tse,vrettos16tps,gorecki17} provides the methodological
-template of offline robust capacity allocation under a simple online layer;
-Sec.~\ref{sec:intro} lists the three structural departures. Within this
-family, the combination of an \emph{exact} deliverability polyhedron, a
-context-conditional (conformal) uncertainty description, and a settlement
-that prices the residual delivery risk is, to our knowledge, new.
+% VI. CONCLUSION
+% =====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+This paper formulated cooling-side flexibility of liquid-cooled AI data
+centers as a day-ahead offering problem and developed ENCORE, which certifies
+the deliverable (offer, duration) set as a context-dependent polyhedral
+envelope and offers from its robustified interior under nested
+safety/delivery disturbance sets. The certificate survives from commitment to
+real-time control: across ten measured ERCOT weeks, the certified participant
+incurred zero violation episodes within its stated domain while delivery
+failures remained inside the priced $\epsd$ budget, against $229$
+violation-days for the uncertified envelope. Day-ahead workload information
+raised the certifiable offer of a real GPU hall by $83\%$, and scarcity-week
+value reached \$$97$/day per MW of IT load with no added hardware. Cooling-side
+thermal inertia can therefore be sold, not merely demonstrated: certified
+envelopes make the loop a market resource while keeping hardware safety
+constraints intact.
 
 % =====================================================================
-\section{Problem Setting}\label{sec:setting}
-
-\subsection{Timescales and Product}
-A facility operator offers, at day-ahead closure, an hourly pair $(q_h, d)$:
-\emph{if activated, reduce cooling power by up to $q_h$ (kW) below baseline,
-sustainable for up to $d$ minutes within hour $h$}. The duration
-$d \in \{15, 30, 60\}$\,min is a product parameter fixed per market (we
-evaluate $d=30$); activation is exogenous with probability $p_{\mathrm{act}}$
-and activated fraction $r_h \in [0,1]$, $r_h \cdot 60 \le d$. The product is
-stylized --- it maps loosely onto short-duration reserve and emergency
-products without encoding any single tariff --- and it is the \emph{only}
-institutional element in the model; all other market realism (prices, weather,
-workload) enters through data. On the operating day a rolling controller acts
-every $\Delta = 5$\,min within market intervals of $\dH = 1$\,h; sub-minute
-chip-level dynamics enter through intra-interval peak statistics
-(Sec.~\ref{sec:plant}).
-
-\subsection{Settlement}\label{sec:settlement}
-Hour $h$ with commitment $q_h$ and activation $r_h$ settles on metered
-cooling power $P_t$ against an exogenous baseline $P^{\mathrm{b}}$:
-revenue $\pi^{\mathrm{cap}}_h q_h \dH$; delivered energy
-$\sum_{t \in h} (P^{\mathrm{b}} - P_t)\Delta$ accumulated over the
-\emph{whole hour}; shortfall
-$s_h = [\,r_h q_h \dH - \textstyle\sum_{t\in h}(P^{\mathrm{b}}-P_t)\Delta\,]_+$
-penalized at $\gamma\,\pi^{\mathrm{cap}}_h$ per unit energy with
-$\gamma \ge 1$; real-time energy deviations settle at the RT price; and a
-degradation cost $c_{\mathrm{deg}} \int [T_{\mathrm{j}}(t) - T_{\mathrm{thr}}]_+\,dt$
-prices sustained hotspot elevation. Whole-hour metering is load-bearing:
-recovery \emph{within} the activated hour cancels delivered energy, so a
-certificate that only guarantees the activation window over-promises; the
-envelope of Sec.~\ref{sec:envelope} certifies both the window depth and the
-hour energy.
-
-\begin{remark}[Baseline]\label{rem:baseline}
-The baseline is exogenous and known (the no-participation cooling trajectory
-under the frozen-efficiency surrogate of Sec.~\ref{sec:plant}). Baseline
-manipulation is a real phenomenon in DR programs~\cite{chao11}; it is
-orthogonal to deliverability and excluded by construction here, as in the
-buildings-reserves literature.
-\end{remark}
-
-% =====================================================================
-\section{Plant Model}\label{sec:plant}
-
-\subsection{Thermal Dynamics with a Virtual Input}
-We model the thermal path of a 1\,MW$_{\mathrm{IT}}$ liquid-cooled hall by
-lumped energy balances. States are the hotspot proxy $T_{\mathrm{j}}$
-(silicon-adjacent metal), the coolant-loop temperature $T_{\mathrm{w}}$, and
---- in the facility-loop configuration used throughout the experiments --- the
-facility-water temperature $T_{\mathrm{f}}$:
-\begin{align}
-C_{\mathrm{j}} \dot T_{\mathrm{j}} &= Q_{\mathrm{IT}}(t)
-  - h_{\mathrm{jw}}\,(T_{\mathrm{j}} - T_{\mathrm{w}}), \notag\\
-C_{\mathrm{w}} \dot T_{\mathrm{w}} &= h_{\mathrm{jw}}\,(T_{\mathrm{j}} -
-  T_{\mathrm{w}}) - u_{\mathrm{ext}}, \label{eq:plant}\\
-C_{\mathrm{f}} \dot T_{\mathrm{f}} &= u_{\mathrm{ext}} - u_{\mathrm{rej}},
-\notag
-\end{align}
-where $Q_{\mathrm{IT}} = \bar Q + w(t)$ is the IT heat load with residual $w$,
-$u_{\mathrm{ext}}$ is the heat extracted from the loop, and $u_{\mathrm{rej}}$
-the heat rejected by the chilled-water plant. The pair
-$u = (u_{\mathrm{ext}}, u_{\mathrm{rej}})$ is a \emph{virtual input}: it
-absorbs the operator's actual handles (supply temperature setpoint, flow) into
-heat-rate variables, with the realization layer mapping back to setpoints.
-This renders the dynamics linear time-invariant; all nonlinearity is confined
-to the state-dependent input set
-\begin{align}
-\mathcal{U}(x; c) = \Big\{ u :\;
-& 0 \le u_{\mathrm{ext}} \le \dot m c_p \big(T_{\mathrm{w}} -
-  \vartheta(c)\big),\; \notag\\
-& u_{\mathrm{ext}} \le \dot m_{\mathrm{f}} c_p (T_{\mathrm{w}} -
-  T_{\mathrm{f}} - \delta_{\mathrm{hx}}),\;
- 0 \le u_{\mathrm{rej}} \le \bar u_{\mathrm{rej}} \Big\},
-\label{eq:Ux}
-\end{align}
-which is affine in $x$ for fixed context --- no bilinear terms survive. The
-first bound carries the model's signature constraint: the supply-temperature
-floor $\vartheta(c) = \max\{\vartheta_{\min},\, \Tdew + \delta_{\mathrm{c}}\}$
-sits above the dew point to preclude condensation, so \emph{humidity directly
-truncates the input set}. Safety requires $T_{\mathrm{j}} \le T^{\max}$ and
-$T_{\mathrm{f}} \le T_{\mathrm{f}}^{\max}$ at every step. Cooling power under
-the frozen-efficiency surrogate is affine in the rejection rate,
-$P = P_0 + u_{\mathrm{rej}}/\eta$, which makes power constraints linear; the
-surrogate freezes the weather-dependence of plant efficiency within the hour
-(its drift enters the degradation and energy terms, not the certificate).
-Sub-minute heat bursts are summarized by intra-interval peak statistics in
-$w$; hardware frequency scaling (DVFS) remains the ultimate backstop beyond
-all modeled sets and appears nowhere else in the model.
-
-The model is discretized exactly (zero-order hold) at $\Delta = 5$\,min for
-certification and $30$\,s for simulation. Parameters are calibrated so the
-plant reproduces the measured behavior of the production liquid-cooled hall
-of~\cite{gheni26} --- supply-temperature relaxation $17 \to 25\,^\circ$C
-shedding 63\% of cooling power --- with loop time constants of 5--8\,min,
-facility time constant $\sim$50\,min, and junction time constant
-$\sim$24\,s.
-
-\subsection{Context}\label{sec:context}
-The context vector $c$ collects what is knowable at the day-ahead deadline:
-the NWP dew-point forecast $\Tdew^{\mathrm{fc}}$ (which sets the floor
-$\vartheta$ and the pre-cooled ready state) and workload-forecast features
-(hour-of-day and the operator's running-job state,
-Sec.~\ref{sec:cs-setup}). Everything downstream --- the envelope, the
-disturbance sets, the offer --- is a function of $c$.
-
-% =====================================================================
-\section{The Certified Flexibility Envelope}\label{sec:envelope}
-
-\subsection{Deliverability as a Polyhedron}
-Fix a context $c$, an initial state $x_0$, and the product $(q, d)$ with
-$N = \dH/\Delta$ steps and activation window of $m = d/\Delta$ steps. The
-commitment is \emph{deliverable} if some admissible input sequence keeps the
-plant safe and meets both settlement clauses of Sec.~\ref{sec:settlement}:
-\begin{align}
-\mathcal{D}(c) = \Big\{ (x_0, q, u_{0:N-1}) :\;
-& x_{t+1} = A x_t + B u_t + E \bar Q, \notag\\
-& u_t \in \mathcal{U}(x_t; c),\quad
-  T_{\mathrm{j},t} \le T^{\max},\; T_{\mathrm{f},t} \le T_{\mathrm{f}}^{\max},
-  \notag\\
-& P(u_t) \le P^{\mathrm{b}} - q, \quad t < m, \label{eq:window}\\
-& \textstyle\sum_{t<N} \big(P^{\mathrm{b}} - P(u_t)\big)\Delta \ge
-  r q \dH . \label{eq:hour}
-\end{align}
-Because the dynamics are linear, $\mathcal{U}$ is affine in $x$, and $P$ is
-affine in $u$, eliminating the states gives a polyhedron
-$G z \le h(c)$ in the lifted variable $z = (x_0, q, u_{0:N-1})$, affine in
-the context through $\vartheta(c)$. Constraint~\eqref{eq:window} is the
-physical promise (depth during the window); \eqref{eq:hour} is the settled
-promise (energy over the hour). The pair is not redundant: in-hour recovery
-makes \eqref{eq:window} alone anti-conservative, and \eqref{eq:hour} alone
-would let depth be served by shallow long reductions.
-
-\begin{theorem}[Envelope]\label{thm:envelope}
-For each context $c$, the deliverable set $\mathcal{D}(c)$ is a polyhedron in
-$(x_0, q, u)$, and the \emph{flexibility envelope}
-$F(x, c) = \max\{q : (x, q, u) \in \mathcal{D}(c) \text{ for some } u\}$
-is concave and piecewise affine in $x$, nonincreasing in $\Tdew$, and
-nonincreasing in $d$. Its projections onto any two coordinates of $(x_0, q)$
-are computable exactly.
-\end{theorem}
-
-\emph{Proof sketch.} Polyhedrality is by construction; concavity and
-piecewise affinity follow because $F$ is the support-function-like optimal
-value of an LP whose feasible set is a polyhedron in $(x,q)$; monotonicity in
-$\Tdew$ because $\vartheta$ enters only as a right-hand side that tightens
-with $\Tdew$; monotonicity in $d$ because the window constraint set grows
-with $m$. Exact projections follow from recursive expansion of the
-polyhedron's shadow \cite[cf.][]{vrettos16tps}; we compute them with the
-Bretl--Lall algorithm. In cross-validation, $10^3$ random lifted points
-reproduce membership in the projected envelope with zero anti-conservative
-errors. \hfill$\blacksquare$
-
-Quantitatively, the calibrated hall sustains 53--59\% of baseline cooling
-power for $d = 30$\,min from the pre-cooled ready state on a dry day --- the
-thermal mass is a genuine half-hour resource --- and the envelope collapses
-toward zero as the dew point approaches the supply floor
-(Fig.~\ref{fig:F1}(b)).
-
-\subsection{Weather-Coupled Virtual Battery}
-Projecting $\mathcal{D}(c)$ onto aggregate power-energy coordinates yields a
-virtual battery~\cite{hao15} whose parameters are \emph{functions of
-context}: capacity
-$E_{\mathrm{cap}}(c) = \sum_i C_i\,\overline{\Delta T_i}(c)$ (the thermal
-mass times the context-dependent admissible temperature swing, e.g.\
-45\,kWh per MW$_{\mathrm{IT}}$ on a dry day, shrinking with $\Tdew$), power
-limits set by $\mathcal{U}(x;c)$, and leakage set by the loop's heat-exchange
-rates. Closed forms match the LP envelope within 3\% across the context grid.
-The object ``a battery whose capacity depends on the weather'' is, we
-believe, the right mental model for thermal flexibility, and it is what an
-aggregator should be handed.
-
-\subsection{Readiness and Commitment Spacing}\label{sec:readiness}
-Define the startable set $\mathcal{R}(q) = \{x : F(x,c) \ge q\}$. Under
-whole-hour settlement, the post-delivery state never lies in
-$\mathcal{R}(q)$ for full-depth commitments --- \emph{consecutive} full-depth
-delivery is thermodynamically impossible, because the recovery energy of hour
-$h$ cancels the delivered energy of hour $h{+}1$. We therefore impose
-commitment spacing (no two adjacent committed hours) at the offering stage,
-which reserves an uncommitted hour in which a recovery law restores the ready
-state (Lemma~\ref{lem:e0}). This is a structural property of energy-settled
-thermal products, not an artifact: any thermal-inertia resource settled on
-hourly energy faces it.
-
-% =====================================================================
-\section{Two-Stage Offering with Delivery Guarantees}\label{sec:offering}
-
-\subsection{Nested Context-Conditional Disturbance Sets}
-Hourly disturbance records are summarized by three physically chosen
-statistics: the peak step residual $\max_t w_t$, the positive residual energy
-$\sum_t [w_t]_+ \Delta$, and the dew-point forecast residual. For each
-context, a $k$-nearest-neighbor split-conformal calibration~\cite{lei18}
-yields a \emph{budget polytope}
-\begin{equation}
-\mathcal{W}_\varepsilon(c) = \Big\{ w : \max_t w_t \le \bar w(c),\;
-\textstyle\sum_t [w_t]_+ \Delta \le \bar E(c) \Big\}
-\times \{ |\delta_{\mathrm{dew}}| \le \bar D(c) \},
-\label{eq:box}
-\end{equation}
-with the miscoverage budget $\varepsilon$ allocated across the three faces a
-priori (any allocation summing to $\varepsilon$ is valid by the union bound),
-so that $\Pr\{ w \in \mathcal{W}_\varepsilon(c) \} \ge 1 - \varepsilon$
-marginally, conditionally on the context neighborhood. The budget (energy)
-face is essential: against bursty traces, an amplitude-only box is
-catastrophically conservative, while the budget face credits the fact that a
-burst cannot persist.
-
-The two clauses of the delivery problem have different stakes, so they get
-\emph{different} sets:
-a \textbf{safety set} $\Wsafe(c) = \mathcal{W}_{\epss}(c)$ with small, fixed
-$\epss$ (we use $0.05$), which is never traded for revenue; and a
-\textbf{delivery set} $\Wdel(c) = \mathcal{W}_{\epsd}(c) \subseteq \Wsafe(c)$
-whose level $\epsd$ is a \emph{product design variable}: delivery failures
-beyond $\Wdel$ are priced by the $\gamma$-penalty of
-Sec.~\ref{sec:settlement}, so $\epsd$ trades certified depth against expected
-penalty, and the offering objective internalizes the trade. Beyond $\Wsafe$
---- a sub-$\epss$-probability event --- thermal excursions are bounded by the
-plant's passive dynamics and hardware frequency scaling; the case study
-measures them (Sec.~\ref{sec:cs-cert}).
-
-\subsection{Tube Tightening and the Fallback Certificate}
-Fix a stabilizing gain $K$ (an off-line LQR design on the discretized plant)
-and the \emph{fallback policy} $u_t = \bar u_t + K (x_t - \bar x_t)$ around a
-nominal plan $(\bar x, \bar u)$. The error $e_t = x_t - \bar x_t$ obeys
-$e_{t+1} = (A + BK) e_t + E w_t$ with $e_0$ in a pre-positioning ball
-(Lemma~\ref{lem:e0}). Worst-case error margins
-$M_t = \max_{w \in \mathcal{W}(c)} |e_t|$ (componentwise) admit an exact
-greedy evaluation for budget polytopes --- sort the impulse-response
-coefficients of $(A{+}BK, E)$ and fill the energy budget largest-first ---
-plus the decayed initial-error term $|(A{+}BK)^t|\,\bar e_0$. Tightening each
-row of $G z \le h(c)$ by the margin of the states and inputs it touches,
-\emph{with safety rows tightened by the $\Wsafe$-margins and the
-delivery rows \eqref{eq:window}--\eqref{eq:hour} by the $\Wdel$-margins},
-yields the \textbf{tightened envelope} $\Ft(x, c) \le F(x, c)$.
-
-\begin{lemma}[Pre-positioning]\label{lem:e0}
-Let the uncommitted hour preceding an obligation run the recovery law
-$u = \bar Q + K_{\mathrm{rec}} (x - x^{\mathrm{ready}})$ elementwise on the
-loop states. Then the start-of-hour error satisfies
-$|e_0| \le \rho^{N} |e_{\mathrm{init}}| + \bar w_{\mathrm{typ}} /
-K_{\mathrm{rec}}$ componentwise, where $\rho < 1$ is the closed-loop step
-contraction. With the calibrated plant and
-$K_{\mathrm{rec}} = 80$\,kW/K, a worst-case 15\,K post-event excursion
-contracts below the disturbance-driven floor within the hour, giving
-$\bar e_0 = 1.25$\,K.
-\end{lemma}
-
-The disturbance-driven term $\bar w_{\mathrm{typ}}/K_{\mathrm{rec}}$ ---
-not the transient --- is binding; certificates built on transient-only
-reasoning overstate readiness, and Sec.~\ref{sec:cs-cert} accounts for every
-start accordingly.
-
-\begin{theorem}[End-to-end guarantee]\label{thm:main}
-Let $q \le \Ft(x^{\mathrm{ready}}, c)$ be committed for hour $h$ with spacing
-(Sec.~\ref{sec:readiness}), and let the hour run the fallback policy from
-any $x_0$ with $|x_0 - x^{\mathrm{ready}}| \le \bar e_0$. Then:
-(i) \emph{safety}: for every $w \in \Wsafe(c)$,
-$T_{\mathrm{j},t} \le T^{\max}$ and $T_{\mathrm{f},t} \le
-T_{\mathrm{f}}^{\max}$ for all $t$, and the realized inputs remain admissible,
-$u_t \in \mathcal{U}(x_t; c)$; hence safety holds with probability at least
-$1-\epss$.
-(ii) \emph{delivery}: for every $w \in \Wdel(c)$, the settled energy
-satisfies $\sum_{t} (P^{\mathrm{b}} - P_t)\Delta \ge r q \dH$ and the window
-depth \eqref{eq:window} holds; hence the obligation is met with probability
-at least $1-\epsd$, and the expected shortfall penalty is bounded by
-$\epsd\, \gamma\, \pi^{\mathrm{cap}} r q \dH$.
-\end{theorem}
-
-\emph{Proof sketch.} The margins $M_t, \mu_t = |K| M_t$ upper-bound the
-state and input deviations from the nominal plan for all $w$ in the
-respective set and all $|e_0| \le \bar e_0$, by the exactness of the support
-function of \eqref{eq:box} under the greedy evaluation and the triangle
-inequality for the $e_0$ term. Feasibility of the tightened rows therefore
-implies feasibility of the original rows for the realized trajectory: safety
-rows against $\Wsafe$, delivery rows against $\Wdel \subseteq \Wsafe$ (so the
-error bound used by the delivery rows is also valid). The probability
-statements follow from the marginal validity of the conformal sets; the
-penalty bound from pricing the complement of $\Wdel$ at the worst-case
-shortfall. \hfill$\blacksquare$
-
-On the operating day, a rolling controller may improve on the fallback ---
-re-solving the suffix LP with depth-indexed margins retains
-Theorem~\ref{thm:main} by construction (the fallback is always a feasible
-suffix) --- but the guarantee never depends on it: the certificate \emph{is}
-the fallback. This inversion --- a deliberately simple real-time layer
-underwritten by an offline certificate --- is what makes the scheme
-implementable on facility control hardware.
-
-\subsection{Day-Ahead Offering}
-With hours decoupled by spacing and the ready state restored between
-obligations, the offer separates per hour:
-\begin{align}
-\max_{0 \le q \le \Ft(x^{\mathrm{ready}}_h, c_h)} \;
-& \pi^{\mathrm{cap}}_h q
-- p_{\mathrm{act}} \Big[ r q \dH\, \overline{\Delta\pi}^{\mathrm{rt}}_h
-+ D_h(q) \Big] \notag \\
-& - p_{\mathrm{act}}\, \epsd\, \gamma\, \pi^{\mathrm{cap}}_h r q \dH ,
-\label{eq:offer}
-\end{align}
-where the bracket carries the expected real-time cost of the energy-neutral
-recovery shift and the degradation cost $D_h(q)$ evaluated on the nominal
-plan, and the last term prices the delivery risk the certificate leaves to
-the settlement. The objective is evaluated on a $q$-grid (exact up to grid
-resolution since $D_h$ is convex in $q$); commitment spacing is enforced
-greedily by expected value. Everything in \eqref{eq:offer} is a function of
-the context and the day-ahead forecasts only.
-
-% =====================================================================
-\section{Case Study}\label{sec:casestudy}
-
-\subsection{Data, Calibration, and Protocol}\label{sec:cs-setup}
-All experimental inputs are measured data; no synthetic disturbance process
-appears anywhere in this section. The plant is calibrated to the
-liquid-cooled hall of~\cite{gheni26} (Sec.~\ref{sec:plant}); its parameters
-are frozen before any market experiment. Heat-load uncertainty comes from the
-Alibaba PAI GPU-cluster trace~\cite{weng22} (2.0\,M workers over 46 usable
-days), mapped to a 1\,MW$_{\mathrm{IT}}$ hall profile at 5-min resolution.
-Day-ahead heat forecasts use only information available at the 12:00 issue
-time: the survival-weighted load of jobs already running plus an
-hour-of-day/level regression for short-job churn, both fit causally.
-Weather is the KIAH (Houston Intercontinental) ASOS record paired with
-\emph{archived} day-ahead numerical-weather-prediction dew-point
-forecasts,\footnote{Open-Meteo previous-runs archive,
-\texttt{dew\_point\_2m\_previous\_day1}; measured day-ahead residual standard
-deviation 2.0\,K at this site. Price and weather data accessed via
-\texttt{gridstatus} and the Iowa Environmental Mesonet.} so both the
-disturbance-set calibration and every simulated day use real forecast
-errors. Prices are ERCOT day-ahead SPPs, 15-min real-time SPPs, and ECRS
-clearing prices for the Houston hub.
-
-The protocol separates design from validation. The trace is split into day
-blocks: the first two thirds (\emph{fit block}) calibrate forecasts,
-conformal sets, and every design constant (feedback gain, face allocation,
-$\epsd$); the final third (\emph{evaluation block}) is replayed exactly once,
-in closed loop, over ten 2024 ERCOT weeks spanning all seasons (including
-Winter Storm Heather) $\times$ 20 seeds. All participants in a seed face
-identical disturbances and activation calls. Every figure and table
-regenerates from committed configurations and seeds by a single
-\texttt{make figures}.
-
-Participants: \textbf{B1} non-participating plant; \textbf{B2} offers from
-the deterministic envelope $F$; \textbf{B3} offers from a 20-scenario
-sample-approximation box (no guarantee); \textbf{B4} the proposed scheme
-($\Ft$, $\epss{=}0.05$, $\epsd{=}0.3$); \textbf{B5} a stationary battery
-sized to the same hourly energy; \textbf{B6} workload curtailment priced at a
-quality-of-service cost. B2--B4 share the offering objective, settlement, and
-real-time machinery; they differ only in the envelope they trust.
-
-\subsection{The Certification Wall and the Value of Information}
-\label{sec:cs-wall}
-Fig.~\ref{fig:F1}(a) sweeps the certified offer against residual workload
-volatility (Borg-2019~\cite{tirmazi20} residuals scaled by $\kappa$; dry day,
-hour 14, $d{=}30$\,min). Certification is volatility-limited: the product
-holds a $\sim$125\,kW/MW$_{\mathrm{IT}}$ plateau up to $\kappa \approx 0.5$,
-then falls through 92 and 50\,kW to zero at the full mixed-batch volatility
-$\kappa{=}1$. The binding statistic is not burst amplitude but
-\emph{sustained hourly residual energy}: deviations persisting for tens of
-minutes consume exactly the buffer the product sells.
-
-The markers place the \emph{real} PAI hall on this wall at two day-ahead
-information levels. With a climatology forecast, its conformal sets certify
-40.7\,kW; the job-aware forecast --- using only the running-job state the
-operator already possesses at the deadline --- shrinks held-out residual
-energy by 19\% and lifts the certified offer to 74.6\,kW ($+83\%$). Day-ahead
-workload information is not an accuracy nicety: it moves a hall along the
-certification wall, and pricing that movement is what a context-dependent
-envelope is for. Fig.~\ref{fig:F1}(b) shows the weather coupling: the
-conditional envelope degrades smoothly with the NWP dew-point forecast, while
-a context-free certificate must assume the worst hour and forfeits most
-dry-day capability.
-
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=\textwidth]{F1_context}
-\caption{The certified envelope on real data ($d=30$\,min, $\epsd=0.3$,
-$\epss=0.05$). (a)~Certified offer vs.\ residual workload volatility
-($\times$ Borg-2019 cell-a); markers: the real PAI hall under climatology
-vs.\ job-aware day-ahead forecasts --- information moves the hall along the
-wall ($40.7 \to 74.6$\,kW). (b)~Weather coupling: conditional vs.\
-context-free certification vs.\ the deterministic ceiling, against the real
-day-ahead NWP dew-point forecast.}
-\label{fig:F1}
-\end{figure*}
-
-\subsection{Ten-Week Closed-Loop Market Results}\label{sec:cs-table}
-Table~\ref{tab:main} aggregates 1{,}400 controller-days per participant.
-Three observations order the comparison.
-
-\emph{(i) Safety is the product.} B2 monetizes the most capacity
-(\$35.1/day per MW$_{\mathrm{IT}}$) but violates the hotspot limit on 229 of
-1{,}400 day-seeds, by up to $+9.8$\,K --- on real workload weeks, an
-uncertified envelope is not a flexibility product but deferred downtime. B4
-commits $8\times$ less capacity, monetizes \$10.6/day, and incurs \emph{zero}
-violation episodes inside its certified domain; its ten beyond-domain
-excursions (statistically expected: the safety set is calibrated at
-$1-\epss = 95\%$) stay below $1.6$\,K --- where frequency scaling is the
-designed backstop --- versus B2's $9.8$\,K. B3 lands between (47 violation
-day-seeds, up to $4.9$\,K): the gap is the guarantee, not the stochastic
-modeling.
-
-\emph{(ii) Value concentrates where the grid needs it.} The scarcity week
-carries the economics: B4 commits 414\,kW/day and earns \$97/day per
-MW$_{\mathrm{IT}}$ during Winter Storm Heather, near the ceiling that even
-the unconstrained B2 attains. Averaged across all ten weeks the certified
-value is \$10.6/day ($\approx$\$3.9k/MW-yr): 2024 ERCOT capacity prices
-outside scarcity are a few \$/MWh, so the ceiling for \emph{any} strategy is
-B2's \$35. Cooling-side flexibility is a scarcity asset --- the correct shape
-for a resource whose marginal cost is thermal risk.
-
-\emph{(iii) Zero capex, zero workload impact.} Scaled to a 100\,MW campus,
-the certified product is worth $\approx$\$390k/yr using hardware the
-facility already owns. The battery returns less (\$6.5/day) before its
-capital cost is counted; curtailment returns more (\$25.6/day) but prices
-direct interference with the compute product, which the cooling side never
-touches. They are portfolio complements; only the cooling loop is free.
-
-\begin{table}[!t]
-\centering
-\caption{Ten ERCOT 2024 weeks $\times$ 20 seeds (1{,}400 day-seeds each),
-per MW$_{\mathrm{IT}}$. MV: market value vs.\ B1. Violations: hotspot
-day-seeds (max excursion).}
-\label{tab:main}
-\begin{tabular}{lccccc}
-\toprule
- & MV & Committed & Delivery & Penalty & Violations \\
- & \$/day & kW/day & ratio & \$/day & days (max K) \\
-\midrule
-B2 naive          & 35.1 & 388 & 0.82 & 1.49 & 229 (9.8) \\
-B3 SAA            & 14.9 & 126 & 0.97 & 0.25 & 47 (4.9) \\
-\textbf{B4 (ours)} & \textbf{10.6} & \textbf{54} & \textbf{0.95} &
-\textbf{0.17} & \textbf{0 in-domain (1.6)} \\
-B5 battery        &  6.5 & 616 & 1.00 & 0    & 0 \\
-B6 curtailment    & 25.6 & 333 & 1.00 & 0    & 0 \\
-\midrule
-\multicolumn{6}{l}{\footnotesize B4 scarcity week: \$97.1/day at 414 kW/day
-committed; delivery ratio 0.92.}\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Certificate Validation}\label{sec:cs-cert}
-Theorem~\ref{thm:main} makes two falsifiable claims; the held-out replay
-tests both at the design point $\epsd = 0.3$. \emph{Safety:} across 1{,}400
-day-seeds, no violation episode starts in an hour whose realized disturbance
-lies in $\Wsafe(c)$ --- zero in-domain episodes, matching clause (i).
-\emph{Delivery:} of 122 activated obligations, 24 fell short (19.7\%, within
-the priced budget $\epsd = 0.3$); every failure is attributable to a warm
-start at the envelope boundary covered by Lemma~\ref{lem:e0}'s ball, and none
-occurred on a cold start with in-set disturbances (0 of 22; exact 95\%
-Clopper--Pearson upper bound 15.4\%). At the conservative frontier point
-$\epsd = 0.1$, the observed rate is 12.7\% against the larger set, with value
-\$9.1/day: the $\epsd$ frontier trades certified depth against priced
-delivery risk, and the settlement internalizes the trade. Three adversarial
-stress days designed \emph{outside} every calibrated set (all-hours
-top-decile bursts, $+3$\,K systematic dew shift, six consecutive activations)
-bound the failure mode: B4's worst excursion is $2.2$\,K with penalties of a
-few \$/day, versus B2's $5.1$--$6.9$\,K.
-
-\subsection{Degradation-Cost Sensitivity}\label{sec:cs-f3}
-Fig.~\ref{fig:F3} sweeps the lifetime-cost coefficient $c_{\mathrm{deg}}$
-over two orders of magnitude. The certified commitment contracts smoothly
-from 1{,}368 to 498\,kW on the scarcity day (value \$867 $\to$ \$445/day) and
-exits entirely on the mild day beyond
-$c_{\mathrm{deg}} \approx 20$\,\$/K$\cdot$h: an operator who prices silicon
-wear conservatively self-selects out of low-price hours but remains a
-scarcity resource. The supply curve an aggregator sees is monotone, smooth,
-and price-elastic at exactly the hours the grid values least.
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{F3_cdeg}
-\caption{Degradation-cost sensitivity of the certified daily commitment
-(scarcity vs.\ mild day; $d=30$\,min). Monotone contraction; the mild day
-exits beyond $c_{\mathrm{deg}}\!\approx\!20$\,\$/K$\cdot$h.}
-\label{fig:F3}
-\end{figure}
-
-% =====================================================================
-\section{Limitations and Outlook}\label{sec:limits}
-Four modeling commitments bound the claims. (i) The product duration $d$ is a
-parameter, not a variable: thermal inertia is a minutes-scale resource, and
-the envelope quantifies exactly how capability decays with $d$ --- products
-requiring hours belong to batteries and workload shifting. (ii) The topology
-assumes chiller-assisted heat rejection, so reducing rejection power is
-always feasible; free-cooling-dominated plants would couple the envelope to
-ambient temperature through a different mechanism. (iii) Metering is at the
-cooling plant against an exogenous baseline (Remark~\ref{rem:baseline}).
-(iv) Beyond the calibrated safety set, hardware frequency scaling is the
-backstop; the case study measures those excursions ($\le 1.6$\,K at
-$1-\epss = 95\%$ coverage) rather than assuming them away. Economically,
-average value is price-limited --- the certified product captures a third of
-the unconstrained ceiling on 2024 ERCOT prices and near-parity in scarcity
---- so its business case is scarcity participation plus interconnection
-optionality~\cite{norris25,sb6}, not baseload arbitrage. The clearest paths
-to deeper certified offers are informational and structural: operator job
-schedules (our running-job forecast is a lower bound on what operators know),
-duration-layered products ($d{=}15$ alongside $d{=}30$), and affine
-disturbance feedback in place of the fixed gain.
-
-% =====================================================================
-\section*{Acknowledgment}
-\todo{Owner to fill (funding, compute).}
-
-% =====================================================================
-% Bibliography — 28 entries, curated in paper/REFS_VERIFIED.md.
-% Entries marked [vc] need a volume/page check at compile; venues/years verified.
-\begin{thebibliography}{28}
-
-\bibitem{sb6} Texas Senate Bill 6, 89th Legislature, Regular Session, 2025;
-Public Utility Commission of Texas implementation proceedings.
-
-\bibitem{googledr} Google, ``Working with utilities to create new demand
-response capabilities,'' company announcement, Aug.\ 2025; agreements with
-Indiana Michigan Power and the Tennessee Valley Authority. [vc]
-
-\bibitem{norris25} T.~Norris, T.~Profeta, D.~Patino-Echeverri, and
-A.~Cowie-Haskell, ``Rethinking load growth: Assessing the potential for
-integration of large flexible loads in {US} power systems,'' Nicholas
-Institute, Duke University, Tech.\ Rep., 2025.
-
-\bibitem{colangelo25} P.~Colangelo, A.~K. Coskun, J.~Megrue, C.~Roberts,
-S.~Sengupta, V.~Sivaram \emph{et al.}, ``Turning {AI} data centers into
-grid-interactive assets: Results from a field demonstration in {Phoenix,
-Arizona},'' arXiv:2507.00909, 2025.
-
-\bibitem{acun26} B.~Acun \emph{et al.}, ``Investigating power consumption
-flexibility of {AI} data centers,'' in \emph{Proc. ACM e-Energy}, 2026. [vc]
-
-\bibitem{gheni26} A.~Gheni \emph{et al.}, ``\todo{exact title},''
-\emph{Applied Energy}, 2026. [vc — calibration anchor; owner has PDF]
-
-\bibitem{ghatikar12} G.~Ghatikar, V.~Ganti, N.~Matson, and M.~A. Piette,
-``Demand response opportunities and enabling technologies for data centers:
-Findings from field studies,'' Lawrence Berkeley National Laboratory,
-Tech.\ Rep.\ LBNL-5763E, 2012.
-
-\bibitem{fu20} Y.~Fu, X.~Han, K.~Baker, and W.~Zuo, ``Assessments of data
-centers for provision of frequency regulation,'' \emph{Applied Energy},
-vol.~277, p.~115621, 2020.
-
-\bibitem{wierman14} A.~Wierman, Z.~Liu, I.~Liu, and H.~Mohsenian-Rad,
-``Opportunities and challenges for data center demand response,'' in
-\emph{Proc. Int. Green Computing Conf. (IGCC)}, 2014.
-
-\bibitem{takci25} M.~Takci, S.~Day, and M.~Qadrdan, ``Data centres as a
-source of flexibility for power systems,'' \emph{Energy Reports}, 2025. [vc]
-
-\bibitem{oh25} S.~Oh \emph{et al.}, ``\todo{title} (reusable thermal energy
-storage for data centers),'' 2025. [vc — owner slide ref]
-
-\bibitem{zhang25} Y.~Zhang \emph{et al.}, ``\todo{title} (Carnot battery
-integration),'' 2025. [vc — owner slide ref]
-
-\bibitem{ravi26} S.~Ravi \emph{et al.}, ``\todo{title} (data center as heat
-prosumer),'' \emph{Applied Energy}, 2026. [vc — owner slide ref]
-
-\bibitem{chen23} Z.~Chen \emph{et al.}, ``\todo{title} (bi-level day-ahead
-bidding of data centers),'' \emph{Energy}, 2023. [vc — owner slide ref]
-
-\bibitem{fanzhao26} Y.~Fan and L.~Zhao, ``\todo{title} (day-ahead workload
-commitment with deliverability),'' arXiv, 2026. [vc — owner slide ref]
-
-\bibitem{vrettos16tse} E.~Vrettos and G.~Andersson, ``Scheduling and
-provision of secondary frequency reserves by aggregations of commercial
-buildings,'' \emph{IEEE Trans. Sustain. Energy}, vol.~7, no.~2, 2016.
-
-\bibitem{vrettos16tps} E.~Vrettos, F.~Oldewurtel, and G.~Andersson, ``Robust
-energy-constrained frequency reserves from aggregations of commercial
-buildings,'' \emph{IEEE Trans. Power Syst.}, vol.~31, no.~6, 2016.
-
-\bibitem{gorecki17} T.~T. Gorecki, L.~Fabietti, F.~A. Qureshi, and C.~N.
-Jones, ``Experimental demonstration of buildings providing ancillary services
-in the {Swiss} market,'' \emph{Energy and Buildings}, vol.~144, 2017. [vc]
-
-\bibitem{zhao15} J.~Zhao, T.~Zheng, and E.~Litvinov, ``Variable resource
-dispatch through do-not-exceed limit,'' \emph{IEEE Trans. Power Syst.},
-vol.~30, no.~2, 2015.
-
-\bibitem{aemo22} Australian Energy Market Operator and CSIRO, ``Dynamic
-operating envelopes workstream: Outcomes report,'' Tech.\ Rep., 2022.
-
-\bibitem{hao15} H.~Hao, B.~M. Sanandaji, K.~Poolla, and T.~L. Vincent,
-``Aggregate flexibility of thermostatically controlled loads,'' \emph{IEEE
-Trans. Power Syst.}, vol.~30, no.~1, 2015.
-
-\bibitem{junker18} R.~G. Junker \emph{et al.}, ``Characterizing the energy
-flexibility of buildings and districts,'' \emph{Applied Energy}, vol.~225,
-2018.
-
-\bibitem{warrington13} J.~Warrington, P.~Goulart, S.~Mari\'ethoz, and
-M.~Morari, ``Policy-based reserves for power systems,'' \emph{IEEE Trans.
-Power Syst.}, vol.~28, no.~4, 2013.
-
-\bibitem{chao11} H.-P. Chao, ``Demand response in wholesale electricity
-markets: the choice of customer baseline,'' \emph{J. Regulatory Economics},
-vol.~39, 2011.
-
-\bibitem{lei18} J.~Lei, M.~G'Sell, A.~Rinaldo, R.~J. Tibshirani, and
-L.~Wasserman, ``Distribution-free predictive inference for regression,''
-\emph{J. Amer. Statist. Assoc.}, vol.~113, no.~523, 2018.
-
-\bibitem{tirmazi20} M.~Tirmazi \emph{et al.}, ``Borg: The next generation,''
-in \emph{Proc. ACM EuroSys}, 2020.
-
-\bibitem{weng22} Q.~Weng \emph{et al.}, ``{MLaaS} in the wild: Workload
-analysis and scheduling in large-scale heterogeneous {GPU} clusters,'' in
-\emph{Proc. USENIX NSDI}, 2022.
-
-\bibitem{e2ecdro} \todo{owner: cite the E2E-CDRO companion paper (under
-review at TSG) as preprint or anonymized reference per TSG policy.}
-
-\end{thebibliography}
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
 
 \end{document}
