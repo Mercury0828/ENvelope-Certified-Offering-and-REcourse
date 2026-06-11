@@ -31,14 +31,27 @@ from ..plant.params import PlantParams
 
 @dataclass
 class TubeMargins:
-    """Worst-case error margins consumed by reachability.build_lifted."""
+    """Worst-case error margins consumed by reachability.build_lifted.
+
+    TWO nested disturbance sets (D-052, mirroring Thm 2's two clauses):
+      SAFETY set (eps_safe, larger):  drives state/input-bound/ramp/terminal margins —
+        "safety holds for all w in W_safe";
+      DELIVERY set (eps_del, smaller): drives the delivery/depth-row margins —
+        "delivery holds for all w in W_del", failures beyond it are PRICED by the
+        penalty-backed settlement.
+    mu_del defaults to mu when no delivery set is given (single-box behavior)."""
 
     K: np.ndarray            # (m, n): u = u_nom + K e
     A_K: np.ndarray
-    M: np.ndarray            # (N+1, n) state margins [K]
-    mu: np.ndarray           # (N+1, m) input margins [W] per channel
-    w_Q: float               # heat-deviation bound [W]
-    w_D: float               # dew-point residual bound [K]
+    M: np.ndarray            # (N+1, n) SAFETY state margins [K]
+    mu: np.ndarray           # (N+1, m) SAFETY input margins [W] per channel
+    w_Q: float               # safety heat-deviation bound [W]
+    w_D: float               # safety dew-point residual bound [K]
+    mu_del: np.ndarray = None    # (N+1, m) DELIVERY input margins [W]
+
+    def __post_init__(self):
+        if self.mu_del is None:
+            self.mu_del = self.mu
 
     @property
     def dew_shift(self) -> float:
@@ -49,6 +62,9 @@ class TubeMargins:
 
     def u_margin(self, t: int, ch: int = 0) -> float:
         return float(self.mu[t, ch])
+
+    def u_margin_del(self, t: int, ch: int = 0) -> float:
+        return float(self.mu_del[t, ch])
 
     def ramp_margin(self, t: int) -> float:
         return float(self.mu[t, 0] + self.mu[t - 1, 0]) if t >= 1 else float(self.mu[t, 0])
@@ -72,33 +88,9 @@ def lqr_gain(p: PlantParams, n_states: int = 2, q_T: float = 1.0,
     return -K_lqr
 
 
-def build_tube(p: PlantParams, n_states: int, N: int, w_Q: float, w_D: float,
-               K: np.ndarray | None = None, E_budget: float | None = None,
-               e0_K: float = 1.5) -> TubeMargins:
-    """e0_K: componentwise bound [K] on the INITIAL state error e_0 — covers any event
-    start within e0_K of the committed ready state (D-047). Default derived from the
-    sprint idle law's one-hour convergence (D-048)."""
-    Ad, Bud, Ed = discrete_matrices(p, n_states, p.dt_ctrl)
-    K = lqr_gain(p, n_states) if K is None else np.asarray(K, dtype=float)
-    A_K = Ad + Bud @ K
-    m = Bud.shape[1]
-
-    coefs = np.zeros((N, n_states))
-    Ai_Ed = Ed[:, 0].copy()
-    A_pow = np.eye(n_states)
-    e0_vec = np.full(n_states, float(e0_K))
-    e0_term = np.zeros((N + 1, n_states))
-    e0_term[0] = np.abs(A_pow) @ e0_vec
-    for i in range(N):
-        coefs[i] = np.abs(Ai_Ed)
-        Ai_Ed = A_K @ Ai_Ed
-        A_pow = A_K @ A_pow
-        e0_term[i + 1] = np.abs(A_pow) @ e0_vec
-
-    n_budget = np.inf if E_budget is None else E_budget / (w_Q * p.dt_ctrl) if w_Q > 0 else 0.0
-
+def _margin_arrays(coefs, e0_term, K, w_Q, n_budget, N, n_states, dt):
     M = np.zeros((N + 1, n_states))
-    mu = np.zeros((N + 1, m))
+    mu = np.zeros((N + 1, K.shape[0]))
     M[0] = e0_term[0]
     mu[0] = np.abs(K) @ M[0]
     for t in range(1, N + 1):
@@ -112,7 +104,53 @@ def build_tube(p: PlantParams, n_states: int, N: int, w_Q: float, w_D: float,
                                  + (n_budget - full) * (c[full] if full < t else 0.0))
             M[t, j] += e0_term[t, j]
         mu[t] = np.abs(K) @ M[t]
-    return TubeMargins(K=K, A_K=A_K, M=M, mu=mu, w_Q=w_Q, w_D=w_D)
+    return M, mu
+
+
+def build_tube(p: PlantParams, n_states: int, N: int, w_Q: float, w_D: float,
+               K: np.ndarray | None = None, E_budget: float | None = None,
+               e0_K: float = 1.25,
+               w_Q_del: float | None = None,
+               E_del: float | None = None) -> TubeMargins:
+    """e0_K: componentwise bound [K] on the INITIAL state error e_0 — covers any event
+    start within e0_K of the committed ready state (D-047/D-051). Derivation for the
+    deployed sprint idle law (K_rec = 80 kW/K): transients decay in tau ~ 325 s (a
+    15 K post-event excursion is gone within the recovery hour), so the binding term
+    is the DISTURBANCE-driven steady error e_ss ~ w_typ/K_rec ~ 0.9 K; 1.25 K = e_ss
+    + transient slack. (A 0.25 K transient-only bound was tried and broke the
+    certificate premise in closed loop — warm-start rate 80%; D-051.)
+
+    (w_Q_del, E_del): the DELIVERY disturbance set (D-052) — when given, the delivery
+    rows are tightened from this (smaller, eps_del) set while safety rows keep the
+    (w_Q, E_budget) eps_safe set."""
+    Ad, Bud, Ed = discrete_matrices(p, n_states, p.dt_ctrl)
+    K = lqr_gain(p, n_states) if K is None else np.asarray(K, dtype=float)
+    A_K = Ad + Bud @ K
+
+    coefs = np.zeros((N, n_states))
+    Ai_Ed = Ed[:, 0].copy()
+    A_pow = np.eye(n_states)
+    e0_vec = np.full(n_states, float(e0_K))
+    e0_term = np.zeros((N + 1, n_states))
+    e0_term[0] = np.abs(A_pow) @ e0_vec
+    for i in range(N):
+        coefs[i] = np.abs(Ai_Ed)
+        Ai_Ed = A_K @ Ai_Ed
+        A_pow = A_K @ A_pow
+        e0_term[i + 1] = np.abs(A_pow) @ e0_vec
+
+    def nb(wq, eb):
+        if eb is None:
+            return np.inf
+        return eb / (wq * p.dt_ctrl) if wq > 0 else 0.0
+
+    M, mu = _margin_arrays(coefs, e0_term, K, w_Q, nb(w_Q, E_budget), N, n_states,
+                           p.dt_ctrl)
+    mu_del = None
+    if w_Q_del is not None:
+        _, mu_del = _margin_arrays(coefs, e0_term, K, w_Q_del, nb(w_Q_del, E_del),
+                                   N, n_states, p.dt_ctrl)
+    return TubeMargins(K=K, A_K=A_K, M=M, mu=mu, w_Q=w_Q, w_D=w_D, mu_del=mu_del)
 
 
 def corner_disturbance(box, N: int, dt_s: float) -> np.ndarray:

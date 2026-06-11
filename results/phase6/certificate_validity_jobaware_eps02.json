@@ -1,0 +1,22 @@
+{
+  "eps": 0.2,
+  "n_obligations": 183,
+  "n_warm_starts": 146,
+  "n_failures_total": 55,
+  "failures_by_cause": {
+    "warm_start": 55,
+    "out_of_box": 0,
+    "clean_in_box": 0
+  },
+  "cold_start_failure_rate": 0.0,
+  "cold_start_ci95": [
+    0.0,
+    0.09489058741498987
+  ],
+  "overall_failure_rate": 0.3005464480874317,
+  "method": "Clopper-Pearson exact",
+  "source": "alibaba_jobaware",
+  "scale": 1.0,
+  "label": "jobaware_eps02",
+  "n_states": 3
+}

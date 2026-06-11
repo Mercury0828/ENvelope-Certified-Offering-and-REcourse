@@ -1,4 +1,4 @@
-"""Phase 5 — closed loop + all baselines B1..B6 on 3 representative weeks (guide §11).
+﻿"""Phase 5 — closed loop + all baselines B1..B6 on 3 representative weeks (guide §11).
 
 Weeks (real ERCOT prices + real KIAH weather):
   mild      2024-04-01..07
@@ -47,8 +47,11 @@ SEED = 20260610
 T_WB = 22.0
 SEEDS = (0, 1, 2)
 N_SAA = 20
-SOURCE = "alibaba"       # real dedicated-ML-hall trace (D-050)
+SOURCE = "alibaba_jobaware"   # real PAI trace + causal job-aware DA forecast (D-051)
 N_STATES = 3             # the gate-approved S2 product, certified (D-049)
+EPS = 0.3                # DELIVERY eps (penalty-backed design point, D-051/D-052)
+EPS_SAFE = 0.05          # SAFETY eps — fixed, never traded for revenue (D-052)
+R_GAIN_KW = 300.0        # offline LQR authority (F-tilde saturates ~300 kW/K, D-051)
 # 10 weeks spanning 2024 (forecast archive coverage; >=500 obligations for tight CIs)
 WEEKS = {
     "w03-jan-scarcity": "2024-01-14",   # Winter Storm Heather
@@ -79,9 +82,10 @@ def saa_box_from_pool(pool: RealRecordPool, hod: int, n=N_SAA) -> Box:
     return Box(w_Q_hi=wq, E_hi=en, w_D_hi=dw)
 
 
-def day_offers(p, cfg, cb, pool_saa, prices, weather, K):
+def day_offers(p, cfg, cb_del, pool_saa, prices, weather, K, eps=EPS, cb_safe=None):
+    """cb_del: DELIVERY-eps boxes; cb_safe: SAFETY-eps boxes (D-052)."""
     rtm_h = prices["rtm_15min"].reshape(24, 4).mean(axis=1)
-    contexts, bx_cert, bx_saa = [], [], []
+    contexts, bx_del, bx_safe, bx_saa = [], [], [], []
     for h in range(24):
         contexts.append({
             # REAL day-ahead NWP dew forecast (D-050); realized dew is the observation
@@ -89,12 +93,13 @@ def day_offers(p, cfg, cb, pool_saa, prices, weather, K):
             "pi_cap": float(prices["pi_cap_hourly"][h]),
             "pi_rt_event": float(rtm_h[h]), "pi_rt_recovery": float(rtm_h[(h + 1) % 24]),
         })
-        bx_cert.append(cb.box(RealRecordPool.hour_features(h)))
+        bx_del.append(cb_del.box(RealRecordPool.hour_features(h)))
+        bx_safe.append((cb_safe or cb_del).box(RealRecordPool.hour_features(h)))
         bx_saa.append(saa_box_from_pool(pool_saa, h))
     pr = cfg["product"]
     kw = dict(d_min=float(pr["d_min"]), p_act=pr["p_act"],
               c_deg_per_Kh=pr["c_deg_per_Kh"], T_thr=pr["T_thr_C"], n_grid=10,
-              n_states=N_STATES)
+              n_states=N_STATES, eps=eps, gamma_mult=pr["gamma_mult"])
     # readiness=False (D-048): terminal startability is guaranteed by construction —
     # adjacency pruning leaves a recovery hour and the sprint idle law restores the
     # e0-ball ready state well within it; the LP terminal (immediate re-delivery)
@@ -102,7 +107,8 @@ def day_offers(p, cfg, cb, pool_saa, prices, weather, K):
     return {
         "B2": make_offers(p, contexts, "deterministic", K=K, **kw),
         "B3": make_offers(p, contexts, "saa", boxes=bx_saa, K=K, **kw),
-        "B4": make_offers(p, contexts, "certified", boxes=bx_cert, K=K, **kw),
+        "B4": make_offers(p, contexts, "certified", boxes=bx_del, boxes_safe=bx_safe,
+                          K=K, **kw),
     }
 
 
@@ -112,11 +118,11 @@ def main():
     p = load_params()
     cfg = load_market_config()
     pr = cfg["product"]
-    K = lqr_gain(p, N_STATES, r_u=1.0 / (10e3) ** 2)
+    K = lqr_gain(p, N_STATES, r_u=1.0 / (R_GAIN_KW * 1e3) ** 2)
 
     pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", source=SOURCE)
     feats, recs = pool_fit.features_records()
-    cb = ConditionalBoxes(feats, recs, eps=0.1, k=80, k_cal=150)
+    cb = ConditionalBoxes(feats, recs, eps=EPS, k=80, k_cal=150)
     print(f"W(c) fit on {len(recs)} real records ({SOURCE}, causal climatology); "
           f"evaluation replays the HELD-OUT trace-day block (D-046/D-050)")
 

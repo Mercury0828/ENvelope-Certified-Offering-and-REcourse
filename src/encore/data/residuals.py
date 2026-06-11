@@ -34,7 +34,21 @@ def heat_residual_hours(source: str = "borg",
                         days: tuple[int, int] | None = None) -> dict:
     """Per trace-hour 12-step heat residual vectors [W] + hour-of-day labels.
     Climatology (the day-ahead forecast model) is fit on the first 2/3 of trace days
-    only (causal); `days` filters which days' hours are returned."""
+    only (causal); `days` filters which days' hours are returned.
+
+    source="alibaba_jobaware" (D-051): residuals vs the CAUSAL job-aware level-aware
+    day-ahead forecast (running-jobs survival + issue-day load level), precomputed by
+    experiments/build_jobaware_forecast.py."""
+    if source == "alibaba_jobaware":
+        z = np.load(TRACES["alibaba"].parent / "jobaware_residuals.npz",
+                    allow_pickle=True)
+        mask = np.ones(len(z["hod"]), dtype=bool)
+        if days == "fit":
+            mask = z["block"] == "fit"
+        elif days == "eval":
+            mask = z["block"] == "eval"
+        return {"vectors": z["vectors"][mask], "hod": z["hod"][mask],
+                "n_days": int(z["day"].max()) + 1, "clim_days": int(z["fit_days"])}
     df = pd.read_csv(TRACES[source])
     df["hod"] = (df["t_s"] // 3600) % 24
     df["P_W"] = df["P_mean_kW"] * 1e3

@@ -101,17 +101,23 @@ pre_paper_audit:
 pre_phase7_upgrades:
   status: complete            # all four owner-approved items (D-049/D-050)
   certified_product: 3-state S2 facility-loop tranche
-  data: [alibaba PAI trace (real, ~zero-certifiable: sustained swings),
-         trainhall scenario (literature-anchored), real NWP dew forecasts 2024,
-         10 ERCOT/KIAH weeks x 20 seeds]
-  final_validation: 186 obligations 0 failures (CP95<=4.8%, eps=0.1); B4 zero
-    violations in 1,400 trainhall day-seeds; B2 245 violation-days max 12.9K
+c3_optimization:
+  status: complete            # owner directive: iterate until C3 strong (D-051/D-052)
+  final_config: [source alibaba_jobaware (real PAI + causal job-aware DA forecast),
+                 nested sets eps_safe 0.05 / eps_del 0.3, gain 300 kW/K, e0 1.25 K,
+                 alloc 0.35/0.35/0.30, 10 ERCOT 2024 weeks x 20 seeds]
+  headline: [F1 information arrow 40.7 -> 74.6 kW certified on the REAL trace,
+             scarcity week $97/day/MW (414 kW/day), avg $10.6/day (B2 price ceiling
+             $35; B4 captures ~30% avg / near-parity in scarcity),
+             0 in-W_safe episodes + 0 clean-in-box failures in 1,400 day-seeds,
+             beyond-box <=1.6K (DVFS domain) vs B2 9.8K on 229 day-seeds]
+  rejected_honestly: [e0=0.25 transient bound, single-box eps=0.3, offer backoff 0.9]
 phase7:
   status: ready_to_start      # paper drafting — OWNER-SUPERVISED (guide §11)
   next_step: owner kicks off drafting sessions; FIRST verify-flagged citations
-    (guide §3); then e0 pre-positioning lemma + setup conventions (load anchoring,
-    trainhall scenario justification) into the theory/setup sections
-autonomous_pipeline: COMPLETE  # phases 0-6 + pre-paper audit + approved upgrades
+    (guide §3); then e0 disturbance-aware lemma + nested-set Thm-2 statement +
+    setup conventions (load anchoring, DVFS-domain semantics) into theory/setup
+autonomous_pipeline: COMPLETE  # phases 0-6 + audit + upgrades + C3 optimization
 remote: https://github.com/Mercury0828/ENvelope-Certified-Offering-and-REcourse (main; push at milestones)
 skill_js: lessons pushed (29c93a4)
 owner_todo:

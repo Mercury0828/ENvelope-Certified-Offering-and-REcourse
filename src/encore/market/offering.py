@@ -74,19 +74,22 @@ def ready_state_for(p: PlantParams, T_dew_fc: float, n_states: int = 2) -> np.nd
 
 
 def envelope_for(p: PlantParams, spec: EnvelopeSpec, x_ready, kind: str,
-                 box: Box | None = None, K=None):
-    """(F_W, tube) for the chosen certification style."""
+                 box: Box | None = None, K=None, e0_K: float = 1.25,
+                 box_safe: Box | None = None):
+    """(F_W, tube) for the chosen certification style. e0_K: see tube.build_tube.
+
+    Nested sets (D-052): `box_safe` (eps_safe) drives safety margins and the robust
+    condensation floor; `box` is the DELIVERY set (eps_del) driving delivery rows.
+    With box_safe=None the single box plays both roles (legacy behavior)."""
     n = spec.n_states
-    if kind == "certified":
-        tube = build_tube(p, n, spec.horizon_steps, w_Q=box.w_Q_sym, w_D=box.w_D,
-                          K=K, E_budget=box.E_hi)
+    bs = box_safe or box
+    if kind in ("certified", "saa"):       # saa: B3's empirical box, no guarantee
+        tube = build_tube(p, n, spec.horizon_steps, w_Q=bs.w_Q_sym, w_D=bs.w_D,
+                          K=K, E_budget=bs.E_hi, e0_K=e0_K,
+                          w_Q_del=box.w_Q_sym, E_del=box.E_hi)
         return certified_max_q(p, spec, tube, x_ready), tube
     if kind == "deterministic":            # B2: naive envelope, no tightening
         return max_q(build_lifted(p, spec), x_ready), None
-    if kind == "saa":                      # B3: empirical-scenario box, no guarantee
-        tube = build_tube(p, n, spec.horizon_steps, w_Q=box.w_Q_sym, w_D=box.w_D,
-                          K=K, E_budget=box.E_hi)
-        return certified_max_q(p, spec, tube, x_ready), tube
     raise ValueError(kind)
 
 
@@ -104,7 +107,10 @@ def degradation_usd(p: PlantParams, spec: EnvelopeSpec, tube, x_ready, q: float,
 def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=None,
                 d_min: float = 30.0, p_act: float = 0.15, c_deg_per_Kh: float = 2.0,
                 T_thr: float = 70.0, n_grid: int = 15,
-                readiness: bool = False, n_states: int = 2) -> list[HourPlan]:
+                readiness: bool = False, n_states: int = 2,
+                eps: float = 0.1, gamma_mult: float = 2.0,
+                e0_K: float = 1.25, boxes_safe=None,
+                backoff: float = 1.0) -> list[HourPlan]:
     """One HourPlan per hour. contexts[h]: T_dew_fc, T_wb, pi_cap ($/MWh),
     pi_rt_event, pi_rt_recovery ($/MWh)."""
     plans = []
@@ -115,7 +121,9 @@ def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=N
         # plant BELOW the robustified floor and the tightened LP is infeasible from its
         # own ready state (caught in F1: all certified curves collapsed for dew >= 16).
         box = boxes[h] if boxes is not None else None
-        dew_guard = box.w_D if (box is not None and kind in ("certified", "saa")) else 0.0
+        box_safe = boxes_safe[h] if boxes_safe is not None else box
+        dew_guard = box_safe.w_D if (box_safe is not None
+                                     and kind in ("certified", "saa")) else 0.0
         x_ready = ready_state_for(p, c["T_dew_fc"] + dew_guard, n_states)
         # Terminal readiness: V1 deliberately uses NO terminal constraint (D-041).
         # A ready-state-box terminal was tried and provably over-tightens (F-tilde = 0
@@ -125,16 +133,26 @@ def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=N
         # day simulator falls back to the D-1 plan on hot starts and reports the count.
         spec = EnvelopeSpec(n_states=n_states, T_dew=c["T_dew_fc"], T_wb=c["T_wb"],
                             d_min=d_min)
-        F, tube = envelope_for(p, spec, x_ready, kind, box=box, K=K)
+        F, tube = envelope_for(p, spec, x_ready, kind, box=box, K=K, e0_K=e0_K,
+                               box_safe=box_safe)
         F = max(F, 0.0)
 
         best_q, best_v = 0.0, 0.0
         if F > 0:
             shift = (c["pi_rt_recovery"] - c["pi_rt_event"]) / J_PER_MWH  # $/J shifted
-            for q in np.linspace(0.0, F - 100.0, n_grid)[1:]:
+            # expected-penalty term (D-051): the product is penalty-backed; with
+            # failure probability <= eps and worst-case full shortfall, the expected
+            # penalty per activated hour is bounded by eps * gamma * r q DH
+            pen_rate = p_act * eps * gamma_mult * c["pi_cap"] * r_act * 3600.0 / J_PER_MWH
+            # backoff (D-052): a 0.9 operating margin was TESTED to convert boundary
+            # commitments' warm starts into cold starts — net-negative (mv -8% for
+            # barely-changed certificate stats), so the default stays 1.0; warm starts
+            # are instead covered by the e0 ball and attributed in validation.
+            for q in np.linspace(0.0, backoff * (F - 100.0), n_grid)[1:]:
                 deg = degradation_usd(p, spec, tube, x_ready, q, c_deg_per_Kh, T_thr)
                 value = (c["pi_cap"] * q * 3600.0 / J_PER_MWH
-                         - p_act * (r_act * q * 3600.0 * shift + deg))
+                         - p_act * (r_act * q * 3600.0 * shift + deg)
+                         - pen_rate * q)
                 if value > best_v:
                     best_q, best_v = float(q), float(value)
         # readiness terminal (D-041; 2-state geometry only — D-048 made it optional)

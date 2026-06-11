@@ -23,12 +23,14 @@ from ..market.offering import HourPlan
 STEPS_H = 12
 
 
-K_RECOVERY = 60e3      # [W/K] sprint gain for idle/recovery hours (D-048): commands
-                       # full extraction/rejection headroom when hot (clipped into the
-                       # realized U(x) by the simulator), recovering a 15 K post-event
-                       # excursion in ~20 min — one uncommitted hour between events
-                       # (adjacency pruning) therefore restores the e0-ball ready state
-                       # by construction, replacing the LP terminal constraint.
+K_RECOVERY = 80e3      # [W/K] sprint gain for idle/recovery hours (D-048/D-051):
+                       # commands full extraction/rejection headroom when hot (clipped
+                       # into the realized U(x) by the simulator). Transients decay
+                       # with tau = C/K_rec ~ 325 s; the binding term is the
+                       # DISTURBANCE-driven steady error e_ss ~ w_typ/K_rec
+                       # (~70 kW / 80 kW/K ~ 0.9 K), which sets the e0 ball (1.25 K
+                       # with transient slack) — the earlier 0.25 K bound wrongly
+                       # ignored e_ss and broke the certificate premise in closed loop.
 
 
 def _idle_controller(p: PlantParams, target: np.ndarray, n: int):
@@ -66,6 +68,7 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
     P_all, Tj_all, switches, infeasible_starts = [], [], 0, 0
     infeasible_hours = []    # hours whose committed event started outside the
                              # certificate's e0-ball (warm starts; D-046/D-047)
+    T_viol_hourly = []       # per-hour hotspot excursions for safety attribution (D-052)
     clip_events = 0          # hours where the realized condensation floor clipped u
 
     n = plans[0].spec.n_states
@@ -110,11 +113,13 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
         x = out["X"][-1].copy()
         P_all.append(out["P_W"])
         Tj_all.append(out["X"][:-1, 0])
+        T_viol_hourly.append(float(max(0.0, out["X"][:, 0].max() - p.T_max)))
         clip_events += int(out["max_clip_W"] > 1e3)
 
     return {
         "P_cool_W": np.concatenate(P_all),
         "T_j": np.concatenate(Tj_all),
+        "T_viol_hourly": T_viol_hourly,
         "switches": switches,
         "infeasible_starts": infeasible_starts,
         "infeasible_hours": infeasible_hours,

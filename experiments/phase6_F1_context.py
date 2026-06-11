@@ -40,77 +40,96 @@ OUT = REPO / "results" / "phase6"
 SEED = 20260610
 HOD = 14
 N_STATES = 3
+EPS = 0.3                  # DELIVERY eps design point (D-051/D-052)
+EPS_SAFE = 0.05            # SAFETY eps (D-052)
 KAPPA_GRID = [0.1, 0.25, 0.4, 0.5, 0.65, 0.8, 1.0]
 T_DEW_GRID = np.arange(8.0, 27.0, 2.0)
 
 
-def boxes_for(p, source, kappa=1.0, eps=0.1):
+def boxes_for(p, source, kappa=1.0):
+    """(delivery, safety) conditional boxes at the D-052 design epsilons."""
     pool = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", scale=kappa, source=source)
     feats, recs = pool.features_records()
-    return ConditionalBoxes(feats, recs, eps=eps, k=80, k_cal=150)
+    return (ConditionalBoxes(feats, recs, eps=EPS, k=80, k_cal=150),
+            ConditionalBoxes(feats, recs, eps=EPS_SAFE, k=80, k_cal=150))
 
 
-def F_of(p, T_dew, box: Box | None, K, d_min=30.0) -> float:
+def F_of(p, T_dew, box: Box | None, K, d_min=30.0, box_safe: Box | None = None) -> float:
+    """Nested-box certified offer (D-052): box_safe drives safety rows + floor,
+    box (delivery set) drives delivery rows."""
     spec = EnvelopeSpec(n_states=N_STATES, T_dew=float(T_dew), d_min=d_min)
     if box is None:
         return max(max_q(build_lifted(p, spec),
                          ready_state_for(p, float(T_dew), N_STATES)), 0.0)
-    x = ready_state_for(p, float(T_dew) + box.w_D, N_STATES)
-    tube = build_tube(p, N_STATES, 12, box.w_Q_sym, box.w_D, K=K, E_budget=box.E_hi)
+    bs = box_safe or box
+    x = ready_state_for(p, float(T_dew) + bs.w_D, N_STATES)
+    tube = build_tube(p, N_STATES, 12, bs.w_Q_sym, bs.w_D, K=K, E_budget=bs.E_hi,
+                      w_Q_del=box.w_Q_sym, E_del=box.E_hi)
     return max(certified_max_q(p, spec, tube, x), 0.0)
 
 
-def trace_volatility_kappa(p) -> float:
-    """Alibaba hall volatility as a fraction of Borg cell-a, measured on the
-    certification-binding statistic (q95 of the hourly-max residual): the PAI hall has
-    comparable step noise but thinner burst tails than the mixed-batch Borg cell."""
+def trace_volatility_kappa(p, source: str) -> float:
+    """Hall volatility as a fraction of Borg cell-a, measured on the certification-
+    binding statistic (q95 of the hourly-max residual)."""
     q = {}
-    for src in ("borg", "alibaba"):
+    for src in ("borg", source):
         pool = RealRecordPool(p.Q_IT_nom, seed=0, role="all", source=src)
         hmax = pool.heat["vectors"].max(axis=1)
         q[src] = float(np.quantile(hmax, 0.95))
-    return q["alibaba"] / q["borg"]
+    return q[source] / q["borg"]
 
 
 def main():
     use_style()
     OUT.mkdir(parents=True, exist_ok=True)
     p = load_params()
-    K = lqr_gain(p, N_STATES, r_u=1.0 / (10e3) ** 2)
+    K = lqr_gain(p, N_STATES, r_u=1.0 / (300e3) ** 2)   # D-051 design gain
     T_DEW_A = 12.0
 
-    # ---- panel (a): wall vs kappa on Borg residuals; Alibaba marked empirically ----
+    # ---- panel (a): wall vs kappa on Borg residuals; the REAL PAI trace marked at
+    # BOTH forecast information levels (climatology vs job-aware, D-051) ----
     rows_a = []
     for kp in KAPPA_GRID:
-        cb = boxes_for(p, "borg", kappa=kp, eps=0.1)
-        b = cb.box(RealRecordPool.hour_features(HOD))
+        cb_d, cb_s = boxes_for(p, "borg", kappa=kp)
+        b = cb_d.box(RealRecordPool.hour_features(HOD))
+        bs = cb_s.box(RealRecordPool.hour_features(HOD))
         rows_a.append({"kappa": kp,
                        "F_kW": F_of(p, T_DEW_A, None, K) / 1e3,
-                       "Ft30_kW": F_of(p, T_DEW_A, b, K, 30.0) / 1e3,
-                       "Ft15_kW": F_of(p, T_DEW_A, b, K, 15.0) / 1e3})
+                       "Ft30_kW": F_of(p, T_DEW_A, b, K, 30.0, bs) / 1e3,
+                       "Ft15_kW": F_of(p, T_DEW_A, b, K, 15.0, bs) / 1e3})
         print(f"kappa {kp}: Ft30 {rows_a[-1]['Ft30_kW']:.1f} kW")
     dfa = pd.DataFrame(rows_a)
     dfa.to_csv(OUT / "F1_kappa.csv", index=False)
     for col in ("Ft30_kW", "Ft15_kW"):
         assert (np.diff(dfa[col]) <= 1e-6).all(), f"{col} not non-increasing in kappa"
 
-    kp_ali = trace_volatility_kappa(p)
-    cb_ali = boxes_for(p, "alibaba", eps=0.1)
+    marks = {}
+    for label, src in (("climatology", "alibaba"), ("job-aware", "alibaba_jobaware")):
+        kp_m = trace_volatility_kappa(p, src)
+        cb_d, cb_s = boxes_for(p, src)
+        b_m = cb_d.box(RealRecordPool.hour_features(HOD))
+        bs_m = cb_s.box(RealRecordPool.hour_features(HOD))
+        marks[label] = (kp_m, F_of(p, T_DEW_A, b_m, K, 30.0, bs_m) / 1e3)
+        print(f"PAI ({label} forecast): kappa = {kp_m:.2f}, Ft30 = {marks[label][1]:.1f} kW")
+    cb_ali, cb_ali_s = boxes_for(p, "alibaba_jobaware")
     b_ali = cb_ali.box(RealRecordPool.hour_features(HOD))
-    F30_ali = F_of(p, T_DEW_A, b_ali, K, 30.0) / 1e3
-    print(f"alibaba empirical kappa = {kp_ali:.2f}, Ft30 = {F30_ali:.1f} kW")
+    b_ali_s = cb_ali_s.box(RealRecordPool.hour_features(HOD))
 
-    # ---- panel (b): dew coupling on the Alibaba trace ----
+    # ---- panel (b): dew coupling on the PAI trace (job-aware forecast) ----
     sample = [cb_ali.box(RealRecordPool.hour_features(h)) for h in range(24)]
+    sample_s = [cb_ali_s.box(RealRecordPool.hour_features(h)) for h in range(24)]
     uni = Box(w_Q_hi=max(b.w_Q_hi for b in sample), E_hi=max(b.E_hi for b in sample),
               w_D_hi=max(b.w_D_hi for b in sample))
+    uni_s = Box(w_Q_hi=max(b.w_Q_hi for b in sample_s),
+                E_hi=max(b.E_hi for b in sample_s),
+                w_D_hi=max(b.w_D_hi for b in sample_s))
     rows_b = []
     for td in T_DEW_GRID:
         rows_b.append({"T_dew": td,
                        "F_kW": F_of(p, td, None, K) / 1e3,
-                       "Ft30_kW": F_of(p, td, b_ali, K, 30.0) / 1e3,
-                       "Ft15_kW": F_of(p, td, b_ali, K, 15.0) / 1e3,
-                       "Ft30_uniform_kW": F_of(p, td, uni, K, 30.0) / 1e3})
+                       "Ft30_kW": F_of(p, td, b_ali, K, 30.0, b_ali_s) / 1e3,
+                       "Ft15_kW": F_of(p, td, b_ali, K, 15.0, b_ali_s) / 1e3,
+                       "Ft30_uniform_kW": F_of(p, td, uni, K, 30.0, uni_s) / 1e3})
     dfb = pd.DataFrame(rows_b)
     dfb.to_csv(OUT / "F1_dew.csv", index=False)
     for col in dfb.columns[1:]:
@@ -124,14 +143,23 @@ def main():
              label="F̃ certified, d = 15 min")
     ax1.plot(dfa.kappa, dfa.Ft30_kW, color="C0", lw=2.2, marker="o", ms=4,
              label="F̃ certified, d = 30 min")
-    ax1.plot([kp_ali], [F30_ali], marker="*", ms=14, color="C1", ls="none",
-             label=f"Alibaba PAI hall (κ ≈ {kp_ali:.2f}), d = 30")
+    kc, Fc = marks["climatology"]
+    kj, Fj = marks["job-aware"]
+    ax1.plot([kc], [max(Fc, 0.5)], marker="X", ms=11, color="C3", ls="none",
+             label=f"PAI hall, climatology DA forecast ({Fc:.0f} kW)")
+    ax1.plot([kj], [Fj], marker="*", ms=15, color="C1", ls="none",
+             label=f"PAI hall, job-aware DA forecast ({Fj:.0f} kW)")
+    ax1.annotate("", xy=(kj, Fj), xytext=(kc, max(Fc, 0.5)),
+                 arrowprops=dict(arrowstyle="->", color="C1", lw=1.4, ls="--"))
+    ax1.annotate("value of day-ahead\njob information", fontsize=8, color="C1",
+                 xy=((kc + kj) / 2 + 0.03, Fj / 2))
     ax1.axvline(1.0, color="C3", lw=1, ls=":")
     ax1.annotate("Borg-2019 cell-a\n(mixed batch)", xy=(0.97, 0.65), fontsize=7.5,
                  ha="right", color="C3", xycoords=("data", "axes fraction"))
-    ax1.set_xlabel("workload volatility (× Borg-2019 cell-a)")
+    ax1.set_xlabel("residual workload volatility (× Borg-2019 cell-a)")
     ax1.set_ylabel("max certifiable S2 offer [kW per MW IT]")
-    ax1.set_title(f"(a) the certification wall (dry day, T_dew = {T_DEW_A:.0f} °C)")
+    ax1.set_title(f"(a) the certification wall (dry day, T_dew = {T_DEW_A:.0f} °C, "
+                  f"ε = {EPS})")
     ax1.legend(fontsize=7.5)
 
     ax2.plot(dfb.T_dew, dfb.F_kW, color="0.55", lw=2.0, label="F — no uncertainty")
@@ -153,8 +181,8 @@ def main():
 
     write_manifest(OUT / "provenance_F1.json", seed=SEED,
                    extra={"experiment": "phase6_F1_context", "hod": HOD,
-                          "n_states": N_STATES, "alibaba_kappa": kp_ali,
-                          "alibaba_Ft30_kW": F30_ali})
+                          "n_states": N_STATES, "eps": EPS,
+                          "pai_marks": {k: list(v) for k, v in marks.items()}})
     print("\nF1 complete; monotonicity + ordering assertions passed.")
 
 

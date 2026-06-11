@@ -100,6 +100,10 @@ class _ZeroTube:
         return 0.0
 
     @staticmethod
+    def u_margin_del(t, ch=0):
+        return 0.0
+
+    @staticmethod
     def ramp_margin(t):
         return 0.0
 
@@ -219,7 +223,7 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec, tube=None) -> Lifted:
         # q_rej,t + cop_ref * q <= cop_ref * chiller_share for activated steps
         for t in range(m_act):
             r_ = np.zeros(nz); r_[rej_col(t)] = 1.0; r_[iq] = cop_ref
-            add(r_, cop_ref * chiller_share - tube.u_margin(t, rej_ch))
+            add(r_, cop_ref * chiller_share - tube.u_margin_del(t, rej_ch))
     elif spec.delivery == "cumulative":
         # Product semantics (D-048), BOTH required:
         # (i) depth during the activation window: P_t <= P_base - q for t < m_act
@@ -228,14 +232,16 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec, tube=None) -> Lifted:
         #     >= r q DH (guide 5.3 sums the full hour — certifying the window alone is
         #     ANTI-conservative once in-hour recovery is possible: recovery's negative
         #     delivered cancels the window's positive delivered).
+        # Delivery-class rows use the eps_del set (D-052): failures beyond W_del are
+        # PRICED by the settlement, while safety rows keep the eps_safe set.
         for t in range(m_act):
             r_ = np.zeros(nz); r_[rej_col(t)] = 1.0; r_[iq] = cop_ref
-            add(r_, cop_ref * chiller_share - tube.u_margin(t, rej_ch))
+            add(r_, cop_ref * chiller_share - tube.u_margin_del(t, rej_ch))
         r_ = np.zeros(nz)
         delivery_margin = 0.0
         for t in range(N):
             r_[rej_col(t)] = dt / cop_ref
-            delivery_margin += (dt / cop_ref) * tube.u_margin(t, rej_ch)
+            delivery_margin += (dt / cop_ref) * tube.u_margin_del(t, rej_ch)
         r_[iq] = m_act * dt          # r*DH = m_act*dt by construction of m_act
         add(r_, N * dt * chiller_share - delivery_margin)
     else:

@@ -117,3 +117,18 @@ and rigorous within explicitly stated scope; remaining improvements are listed l
 - Simulator/optimizer operating-point seams and METERING-DEFINITION seams (window vs
   whole-hour) are where certified-systems papers break; align the certified quantity
   with the settled quantity symbol-for-symbol before any experiment.
+
+
+## 5. C3-optimization rounds — FINAL RESOLUTION (2026-06-11, D-051/D-052)
+
+Owner directive: iterate until C3 (value on real data) is strong; honest means only;
+frozen results untouched. Rounds executed (each validated or rejected in closed loop):
+job-aware DA forecast (kept, -19% residual energy, F1 +83% information arrow);
+design-knob optimizer on fit block (gain saturates 300 kW/K, alloc 0.35/0.35/0.30);
+e0=0.25 transient bound (REJECTED - broke certificate premise; corrected to
+disturbance-aware 1.25 K); single-box eps=0.3 (REJECTED - safety eroded; replaced by
+NESTED W_safe 0.05 / W_del 0.3 sets mirroring Thm-2 clauses); offer backoff 0.9
+(REJECTED - net-negative); per-hour safety-episode attribution with DVFS-domain
+semantics (kept). Final chain: see results/phase6/SELF_AUDIT.md. Key headline:
+real PAI hall certified 40.7 -> 74.6 kW by day-ahead job information; scarcity week
+$97/day/MW; 0 in-W_safe episodes / 0 clean-in-box failures in 1,400 day-seeds.

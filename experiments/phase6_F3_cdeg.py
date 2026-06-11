@@ -36,7 +36,7 @@ OUT = REPO / "results" / "phase6"
 SEED = 20260610
 C_DEG_GRID = [0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0]
 DAYS = {"scarcity (2024-01-16)": "2024-01-16", "mild (2024-04-03)": "2024-04-03"}
-SOURCE, SCALE = "borg", 0.5   # trainhall scenario config (D-050) — offers exist here
+SOURCE, SCALE = p5.SOURCE, 1.0   # real PAI trace + job-aware forecast (D-051)
 
 
 def main():
@@ -44,10 +44,10 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     p = load_params()
     cfg = load_market_config()
-    K = lqr_gain(p, p5.N_STATES, r_u=1.0 / (10e3) ** 2)
+    K = lqr_gain(p, p5.N_STATES, r_u=1.0 / (p5.R_GAIN_KW * 1e3) ** 2)
     pool = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", source=SOURCE, scale=SCALE)
     feats, recs = pool.features_records()
-    cb = ConditionalBoxes(feats, recs, eps=0.1, k=80, k_cal=150)
+    cb = ConditionalBoxes(feats, recs, eps=p5.EPS, k=80, k_cal=150)
 
     rows = []
     for label, DATE in DAYS.items():

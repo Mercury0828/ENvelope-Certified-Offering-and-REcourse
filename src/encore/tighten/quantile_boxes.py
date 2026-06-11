@@ -54,10 +54,10 @@ class ConditionalBoxes:
     with localized split-conformal calibration (D-033)."""
 
     # a-priori eps allocation across the (amplitude, energy, dew) faces (D-047):
-    # any allocation summing to eps is Bonferroni-valid; weighting the budget toward
-    # the faces that drive tube margins (energy) and away from the face that rarely
-    # binds (dew) is a DESIGN choice fixed before validation, not data snooping.
-    FACE_ALLOC = (0.45, 0.45, 0.10)
+    # any allocation summing to eps is Bonferroni-valid; the weighting is a DESIGN
+    # choice fixed before validation, not data snooping. Rebalanced in D-051 once the
+    # dew face moved to REAL NWP residuals (heavier-tailed than the earlier model).
+    FACE_ALLOC = (0.35, 0.35, 0.30)
 
     def __init__(self, features: np.ndarray, records: np.ndarray, eps: float = 0.1,
                  k: int = 150, k_cal: int = 300, split_seed: int = 0,

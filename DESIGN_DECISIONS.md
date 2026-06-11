@@ -603,3 +603,50 @@ closed-loop chain runs on (i) the real PAI trace (B4 rationally near-zero — th
 headline) and (ii) a literature-anchored dedicated-training-hall scenario (training
 power is near-constant in published measurements; emulated as Borg×0.5, labeled
 "trainhall" scenario). The κ wall quantifies the certifiability requirement.
+
+
+## 2026-06-11 - D-051: C3 optimization round 1 - job-aware forecast + design knobs
+(owner directive: optimize until C3 is strong; honest means only, frozen results untouched)
+
+1. **Job-aware day-ahead forecast** (`build_jobaware_forecast.py`): at DA issue time
+   the operator knows the running workers, their elapsed runtimes and utilizations
+   (guide 6.2 "planned job mix"). Forecast = survival-weighted persistent component
+   (empirical S(remaining|elapsed), fit block only) + level-aware churn regression on
+   the issue-day load (beta=0.099 after trimming the trace ramp-in, which had faked a
+   0.81 day-autocorrelation). Held-out residuals vs climatology: hourly-max q95
+   205->171 kW, E-face q95 658->535 MJ. Source "alibaba_jobaware".
+2. **Design-knob optimizer on FIT data only** (eval block touched once at the end):
+   LQR authority r_u (F-tilde saturates at ~300 kW/K), face allocation
+   (0.35/0.35/0.30 after the dew face moved to real NWP residuals), eps as a product
+   design variable with the expected-penalty term eps*gamma*r*q*DH wired into the
+   offering objective (the product is penalty-backed).
+3. **e0 correction**: a transient-only 0.25 K bound was tried and BROKE the
+   certificate premise in closed loop (80% warm starts, 30% failures, 3.6 K
+   violations) - the binding term is the disturbance-driven steady error of the
+   sprint idle law, e_ss ~ w_typ/K_rec. Final: K_rec = 80 kW/K, e0 = 1.25 K.
+4. **Offer backoff 0.9 tested and rejected** (mv -8% for barely-changed certificate
+   stats); commitments stay at the F-tilde boundary, warm starts covered by the ball.
+
+## 2026-06-11 - D-052: Nested safety/delivery disturbance sets + DVFS-domain semantics
+
+**Problem.** Raising the single-box eps to 0.3 for deeper offers also SHRANK the set
+on which safety is guaranteed - 30% of hours legally out-of-box produced 5 K
+violations. Thm 2 has TWO clauses with different stakes: safety (for all w in W) and
+delivery (probability >= 1-eps, priced by gamma penalties).
+
+**Decision.** Two NESTED conformal sets per context: W_safe (eps_safe = 0.05, fixed,
+never traded for revenue) drives state/input/ramp/terminal margins and the robust
+condensation floor; W_del (eps_del = 0.3, the design point) drives the delivery/depth
+rows. W_del subset W_safe implies |e| <= M_safe wherever delivery is claimed.
+Failures beyond W_del are PRICED; excursions beyond W_safe are the DVFS-BACKSTOP
+domain (guide 6.2 names hardware DVFS as the ultimate backstop - real silicon
+throttles; the lumped 85 C proxy excursions there are bounded and reported, never
+silently absorbed).
+
+**Validation semantics** (per-hour safety attribution in run_day/F2): a violation
+EPISODE = contiguous violating hours attributed to its start hour. Gates: (i) zero
+episodes starting in an in-W_safe clean-start hour (else the certificate is broken);
+(ii) beyond-box episodes bounded (<= 3 K) and clearly below uncertified B2 (<= 0.5x);
+(iii) zero clean-in-box delivery failures; (iv) CP-95 on cold-start failures <= eps_del.
+Final 10-week x 20-seed batch: 0 in-safe-box episodes, 0 clean-in-box failures,
+beyond-box episodes <= 1.6 K (10 of 1,400 day-seeds) vs B2 9.8 K on 229 day-seeds.

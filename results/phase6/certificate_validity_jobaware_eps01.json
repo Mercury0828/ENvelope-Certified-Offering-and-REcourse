@@ -1,0 +1,30 @@
+{
+  "eps": 0.1,
+  "n_obligations": 118,
+  "n_warm_starts": 93,
+  "n_failures_total": 15,
+  "failures_by_cause": {
+    "warm_start": 15,
+    "out_of_box": 0,
+    "clean_in_box": 0
+  },
+  "cold_start_failure_rate": 0.0,
+  "cold_start_ci95": [
+    0.0,
+    0.1371851715307125
+  ],
+  "overall_failure_rate": 0.1271186440677966,
+  "safety": {
+    "episodes_total": 10,
+    "episodes_in_safe_box": 0,
+    "episode_max_K": 1.8160251649186137,
+    "eps_safe": 0.05,
+    "day_seeds": 1400,
+    "note": "beyond-W_safe episodes = DVFS-backstop domain (guide 6.2)"
+  },
+  "method": "Clopper-Pearson exact",
+  "source": "alibaba_jobaware",
+  "scale": 1.0,
+  "label": "jobaware_eps01",
+  "n_states": 3
+}

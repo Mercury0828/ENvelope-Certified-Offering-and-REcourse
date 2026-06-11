@@ -1,6 +1,6 @@
 {
-  "timestamp_utc": "2026-06-11T05:32:42.262507+00:00",
-  "git_hash": "45f983022f0c656c7918ee496451af83cad7d4c8",
+  "timestamp_utc": "2026-06-11T13:58:46.925016+00:00",
+  "git_hash": "4cfc07753860d30932112e29d6dd8ae7b84b237d",
   "config_path": "E:\\Project-git\\ENvelope-Certified Offering and REcourse\\config\\plant.yaml",
   "config_sha256": "ee76c5a5f4768b5cc993f92f6b8216dfb1df31c2bc2cf7b2662386fc6cb1bbb3",
   "seed": 20260610,
@@ -24,60 +24,78 @@
   },
   "configs": [
     [
-      "alibaba",
+      "alibaba_jobaware",
       1.0,
-      "alibaba"
+      "jobaware_eps03",
+      0.3
     ],
     [
-      "borg",
-      0.5,
-      "trainhall"
+      "alibaba_jobaware",
+      1.0,
+      "jobaware_eps01",
+      0.1
     ]
   ],
   "n_states": 3,
   "certificate_validity": {
-    "alibaba": {
-      "eps": 0.1,
-      "n_obligations": 0,
-      "n_warm_starts": 0,
-      "n_failures_total": 0,
+    "jobaware_eps03": {
+      "eps": 0.3,
+      "n_obligations": 122,
+      "n_warm_starts": 100,
+      "n_failures_total": 24,
       "failures_by_cause": {
-        "warm_start": 0,
+        "warm_start": 24,
         "out_of_box": 0,
         "clean_in_box": 0
       },
       "cold_start_failure_rate": 0.0,
       "cold_start_ci95": [
         0.0,
-        0.975
+        0.15437251281557454
       ],
-      "overall_failure_rate": 0.0,
+      "overall_failure_rate": 0.19672131147540983,
+      "safety": {
+        "episodes_total": 10,
+        "episodes_in_safe_box": 0,
+        "episode_max_K": 1.5739771125769266,
+        "eps_safe": 0.05,
+        "day_seeds": 1400,
+        "note": "beyond-W_safe episodes = DVFS-backstop domain (guide 6.2)"
+      },
       "method": "Clopper-Pearson exact",
-      "source": "alibaba",
+      "source": "alibaba_jobaware",
       "scale": 1.0,
-      "label": "alibaba",
+      "label": "jobaware_eps03",
       "n_states": 3
     },
-    "trainhall": {
+    "jobaware_eps01": {
       "eps": 0.1,
-      "n_obligations": 186,
-      "n_warm_starts": 111,
-      "n_failures_total": 0,
+      "n_obligations": 118,
+      "n_warm_starts": 93,
+      "n_failures_total": 15,
       "failures_by_cause": {
-        "warm_start": 0,
+        "warm_start": 15,
         "out_of_box": 0,
         "clean_in_box": 0
       },
       "cold_start_failure_rate": 0.0,
       "cold_start_ci95": [
         0.0,
-        0.047995064055142256
+        0.1371851715307125
       ],
-      "overall_failure_rate": 0.0,
+      "overall_failure_rate": 0.1271186440677966,
+      "safety": {
+        "episodes_total": 10,
+        "episodes_in_safe_box": 0,
+        "episode_max_K": 1.8160251649186137,
+        "eps_safe": 0.05,
+        "day_seeds": 1400,
+        "note": "beyond-W_safe episodes = DVFS-backstop domain (guide 6.2)"
+      },
       "method": "Clopper-Pearson exact",
-      "source": "borg",
-      "scale": 0.5,
-      "label": "trainhall",
+      "source": "alibaba_jobaware",
+      "scale": 1.0,
+      "label": "jobaware_eps01",
       "n_states": 3
     }
   }
