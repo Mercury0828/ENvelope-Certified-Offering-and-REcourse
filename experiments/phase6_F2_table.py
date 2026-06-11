@@ -42,17 +42,22 @@ OUT = REPO / "results" / "phase6"
 SEED = 20260610
 SEEDS = tuple(range(20))
 EPS = 0.1
-KAPPAS = (1.0, 0.5)     # Borg cell-a as-is, and the steadier-hall reference (D-047)
+# Two configurations (D-050 finding): the REAL ML-cluster trace (PAI — certification
+# is honestly ~zero against its day-ahead-unforecastable sustained load swings) and
+# the literature-anchored dedicated-training-hall scenario (near-constant training
+# power; emulated as Borg residuals at half scale, labeled as scenario).
+CONFIGS = [("alibaba", 1.0, "alibaba"), ("borg", 0.5, "trainhall")]
 
 
-def run_kappa(kappa: float, p, cfg, K):
+def run_source(source: str, scale: float, label: str, p, cfg, K):
     pr = cfg["product"]
-    suffix = f"_k{int(round(kappa * 100)):03d}"
-    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", scale=kappa)
+    suffix = f"_{label}"
+    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", source=source,
+                              scale=scale)
     feats, recs = pool_fit.features_records()
     cb = ConditionalBoxes(feats, recs, eps=EPS, k=80, k_cal=150)
-    print(f"[kappa={kappa}] W(c) fit on {len(recs)} records (days 0-20, causal clim); "
-          "evaluation replays held-out days 21-30 (D-046)")
+    print(f"[{label}] W(c) fit on {len(recs)} records ({source} x {scale}, causal "
+          "clim); evaluation replays the held-out trace-day block (D-046/D-050)")
 
     rows = []
     for week, start in p5.WEEKS.items():
@@ -64,18 +69,18 @@ def run_kappa(kappa: float, p, cfg, K):
             base = baseline_day(p, p5.T_WB)
             offers = p5.day_offers(p, cfg, cb,
                                    RealRecordPool(p.Q_IT_nom, seed=SEED + 1, role="fit",
-                                                  scale=kappa),
+                                                  source=source, scale=scale),
                                    prices, weather, K)
             b4_boxes = [cb.box(RealRecordPool.hour_features(h)) for h in range(24)]
             for seed in SEEDS:
                 rng = np.random.default_rng(stable_seed(DATE, seed))
                 pool = RealRecordPool(p.Q_IT_nom, seed=stable_seed("replay", seed),
-                                      role="eval", scale=kappa)
+                                      role="eval", source=source, scale=scale)
                 activations = rng.uniform(size=24) < pr["p_act"]
                 w_day = np.zeros((24, 12))
-                dew_res = np.zeros(24)
+                dew_res = np.asarray(weather["dew_resid_hourly"], dtype=float)  # REAL
                 for h in range(24):
-                    w_day[h], dew_res[h] = pool.draw_hour(h)
+                    w_day[h], _ = pool.draw_hour(h)
 
                 for name, plans, ctl in (("B1", offers["B4"], "idle"),
                                          ("B2", offers["B2"], "mpc"),
@@ -147,7 +152,7 @@ def run_kappa(kappa: float, p, cfg, K):
                                  "n_fail_clean_in_box": 0, "n_warm_starts": 0,
                                  "T_viol_K": 0.0, "clip_events": 0,
                                  "mpc_switches": 0, "infeasible_starts": 0})
-            print(f"  [k={kappa}] {week} {DATE} done ({len(SEEDS)} seeds)", flush=True)
+            print(f"  [{label}] {week} {DATE} done ({len(SEEDS)} seeds)", flush=True)
 
     df = pd.DataFrame(rows)
     b1 = df[df.controller == "B1"].set_index(["date", "seed"])["profit_usd"]
@@ -158,7 +163,8 @@ def run_kappa(kappa: float, p, cfg, K):
     df["rebound_energy_usd"] = df.apply(
         lambda r: 0.0 if r["controller"] in ("B5", "B6")
         else r["rt_cost_usd"] - b1rt.loc[(r["date"], r["seed"])], axis=1)
-    df["kappa"] = kappa
+    df["source"] = source
+    df["scale"] = scale
     df.to_csv(OUT / f"metrics_20seed{suffix}.csv", index=False)
 
     tab = df.groupby(["week", "controller"]).agg(
@@ -197,7 +203,8 @@ def run_kappa(kappa: float, p, cfg, K):
             "cold_start_failure_rate": float(cold_fail / n_cold),
             "cold_start_ci95": [ci_lo, ci_hi],
             "overall_failure_rate": float(n_fail / max(n_obl, 1)),
-            "method": "Clopper-Pearson exact", "kappa": kappa}
+            "method": "Clopper-Pearson exact", "source": source, "scale": scale,
+            "label": label, "n_states": p5.N_STATES}
     (OUT / f"certificate_validity{suffix}.json").write_text(json.dumps(cert, indent=2),
                                                             encoding="utf-8")
     print("\ncertificate validity:", json.dumps(cert, indent=2))
@@ -213,14 +220,14 @@ def run_kappa(kappa: float, p, cfg, K):
     assert v["B2"] > 1e-6
     # Thm-2 gate (D-047): no clean in-box cold-start failure may exist (that would be a
     # broken certificate), and the data must not reject "cold-start failure prob <= eps".
-    # At kappa where B4 rationally never offers (n_obligations = 0) the gate is vacuous.
+    # where B4 rationally never offers (n_obligations = 0) the gate is vacuous.
     assert cert["failures_by_cause"]["clean_in_box"] == 0, \
         f"CERTIFICATE BROKEN: {cert['failures_by_cause']['clean_in_box']} in-box cold-start failures"
     if n_obl > 0:
         assert cert["cold_start_ci95"][0] <= EPS, \
             f"data rejects cold-start failure-rate <= eps: CP lower {cert['cold_start_ci95'][0]:.3f}"
     else:
-        print("NOTE: B4 has zero obligations at this kappa — certificate gate vacuous "
+        print("NOTE: B4 has zero obligations on this source — certificate gate vacuous "
               "(rational no-offer regime)")
     assert (df.groupby(["week", "controller"])["date"].count()
             == 7 * len(SEEDS)).all(), "incomplete cells"
@@ -228,18 +235,20 @@ def run_kappa(kappa: float, p, cfg, K):
     # ---- F2 figure (per-week scatter, error bars over seeds) ----
     fig, ax = plt.subplots(figsize=(7.0, 4.6))
     colors = {"B1": "0.5", "B2": "C3", "B3": "C1", "B4": "C0", "B5": "C2", "B6": "C4"}
-    mk = {"mild": "o", "humid": "s", "scarcity": "^"}
+    markers = ["o", "s", "^", "v", "D", "P", "X", "*", "<", ">"]
+    weeks_sorted = sorted(tab["week"].unique())
     for c, color in colors.items():
-        for wk, m in mk.items():
+        for wi, wk in enumerate(weeks_sorted):
             sub = tab[(tab.controller == c) & (tab.week == wk)]
             ax.errorbar(sub["viol_max_K"] + 0.01, sub["mv_mean"], yerr=sub["mv_std"],
-                        fmt=m, color=color, ms=6, lw=1, capsize=2,
-                        label=c if wk == "mild" else None)
+                        fmt=markers[wi % len(markers)], color=color, ms=5, lw=1,
+                        capsize=2, label=c if wi == 0 else None)
     ax.set_xscale("log")
     ax.set_xlabel("worst hotspot violation over the week [K] (log scale, +0.01 offset)")
     ax.set_ylabel("market value vs no-market [$/day]")
-    ax.set_title(f"F2 — portfolio positioning, 3 real weeks × 20 seeds (κ = {kappa})\n"
-                 "(marker: ○ mild  □ humid  △ scarcity; bars: ±1σ over seeds)")
+    ax.set_title(f"F2 — portfolio positioning, {len(p5.WEEKS)} real weeks × "
+                 f"{len(SEEDS)} seeds ({label}, S2 product)\n"
+                 "(markers by week; bars: ±1σ over seeds)")
     ax.legend(fontsize=7.5, ncol=3)
     fig.tight_layout()
     savefig(fig, OUT / f"F2_portfolio{suffix}")
@@ -252,15 +261,15 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     p = load_params()
     cfg = load_market_config()
-    K = lqr_gain(p, r_u=1.0 / (10e3) ** 2)
+    K = lqr_gain(p, p5.N_STATES, r_u=1.0 / (10e3) ** 2)
     certs = {}
-    for kappa in KAPPAS:
-        certs[kappa] = run_kappa(kappa, p, cfg, K)
+    for source, scale, label in CONFIGS:
+        certs[label] = run_source(source, scale, label, p, cfg, K)
     write_manifest(OUT / "provenance_F2_table.json", seed=SEED,
                    extra={"experiment": "phase6_F2_table", "seeds": len(SEEDS),
-                          "weeks": p5.WEEKS, "kappas": list(KAPPAS),
-                          "certificate_validity": {str(k): v for k, v in certs.items()}})
-    print("\nphase6 F2 + main table complete (both kappa scenarios).")
+                          "weeks": p5.WEEKS, "configs": CONFIGS,
+                          "n_states": p5.N_STATES, "certificate_validity": certs})
+    print("\nphase6 F2 + main table complete (both configurations).")
 
 
 if __name__ == "__main__":

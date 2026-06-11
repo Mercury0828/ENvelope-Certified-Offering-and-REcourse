@@ -566,3 +566,40 @@ Resolutions, all fixed a priori and theory-clean:
    idle, OR an order of magnitude below uncertified B2 and ≤ 1 K", with the economic
    consequence (bounded penalties) reported. At κ=0.5: B4 worst 0.62 K vs B2 12.2 K on
    the all-hours-burst day; zero violations in dew-shift/consecutive stresses.
+
+## 2026-06-11 — D-049: 3-state (S2) tube certification (owner decision: 推广)
+
+**Decision.** Tube margins, fallback policy and the whole offering/closed-loop chain
+generalized to the 3-state plant: K is the 2×3 discrete-LQR gain over both inputs,
+margins carry per-channel mu (q_ext for U(x)/ramp rows, q_rej for power/delivery rows),
+the CDU row is tightened by mu_ext + ṁc(M_w + M_f), and q_rej's equipment bounds are
+robustified. The certified product is now the gate-approved S2 facility-loop tranche.
+n=3 events run the certified fallback policy directly (the certificate IS the
+fallback); the cheap-MPC layer remains 2-state — D-027's scoping is retired.
+Smoke: S2 certified F̃30 = 125 kW (κ=0.5-Borg, dry) vs 35.8 kW for the coolant loop;
+corner injections clean. Supersedes the pre-paper review's B10 scope caveat.
+
+## 2026-06-11 — D-050: Real-data upgrades (owner decisions: 真实训练机房 trace + NWP 露点)
+
+**(a) Real day-ahead dew forecasts.** Open-Meteo previous-runs archive
+(dew_point_2m_previous_day1, KIAH coordinates, 2024): measured DA residual std
+2.01 K, q95 3.7 K, bias +0.42 K — replaces D-042's N(0, 1.2 K) [est] model in both
+W(c) records and simulation (realized dew residual = observation − archived forecast,
+per simulated day). Archive begins 2024-01-19: evaluation weeks moved entirely into
+2024 (10 weeks spanning seasons, also satisfying the ≥500-obligation CI item); the 5
+pre-archive days of the Heather week fall back to obs-as-forecast (disclosed).
+
+**(b) Real ML-cluster trace.** Alibaba PAI GPU-2020 (instance ⨯ sensor join, 2.0 M
+workers, 50.7 days → 5-min hall profile; join rate 42.6% of terminated instances).
+**Finding:** the PAI hall certifies ~ZERO at d=30/ε=0.1 — but for a different reason
+than Borg: its deviations are hour-scale SUSTAINED load swings (hourly positive-energy
+face 643 MJ vs Borg's 275; amplitude tails thinner, q95 hourly-max 169 vs 222 kW).
+Against day-ahead-unforecastable sustained ±19% swings no thermal-mass product
+survives; the missing ingredient is the operator's day-ahead job schedule (guide 6.2's
+"planned job mix" context — unavailable in any public trace, cf. D-043). Paper
+structure: BOTH real traces are presented as public-data upper bounds (each defeating
+certification through a distinct mechanism: bursts vs sustained swings), and the
+closed-loop chain runs on (i) the real PAI trace (B4 rationally near-zero — the honest
+headline) and (ii) a literature-anchored dedicated-training-hall scenario (training
+power is near-constant in published measurements; emulated as Borg×0.5, labeled
+"trainhall" scenario). The κ wall quantifies the certifiability requirement.

@@ -96,7 +96,7 @@ class _ZeroTube:
         return 0.0
 
     @staticmethod
-    def u_margin(t):
+    def u_margin(t, ch=0):
         return 0.0
 
     @staticmethod
@@ -120,8 +120,7 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec, tube=None) -> Lifted:
     Q = p.Q_IT_nom if spec.Q_IT is None else spec.Q_IT
     m_act = activation_steps(spec)
     tube = tube or _ZeroTube()
-    if not isinstance(tube, _ZeroTube) and n != 2:
-        raise NotImplementedError("tube-tightened envelope scoped to 2-state (D-027)")
+    rej_ch = 0 if n == 2 else 1          # the channel whose cut is the power cut
 
     Ad, Bud, Bwd = discrete_matrices(p, n, dt)
     nz = n + 1 + N * m
@@ -191,7 +190,9 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec, tube=None) -> Lifted:
                 # passive CDU (D-005): u_ext,t <= mc_max (T_w,s - T_f,s - delta_hx)
                 r_ = np.zeros(nz); r_[iu(t)] = 1.0
                 add(r_ - mc_max * (X_coef[s, 1] - X_coef[s, 2]),
-                    mc_max * (X_const[s, 1] - X_const[s, 2] - p.delta_hx))
+                    mc_max * (X_const[s, 1] - X_const[s, 2] - p.delta_hx)
+                    - (tube.u_margin(t, 0)
+                       + mc_max * (tube.x_margin(s, 1) + tube.x_margin(s, 2))))
 
     # ---- input channel bounds
     for t in range(N):
@@ -200,8 +201,8 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec, tube=None) -> Lifted:
         add(-r_, -spec.u_ext_abs[0])
         if n == 3:
             r_ = np.zeros(nz); r_[iu(t) + 1] = 1.0
-            add(r_, p.q_rej_max)
-            add(-r_, 0.0)
+            add(r_, p.q_rej_max - tube.u_margin(t, 1))
+            add(-r_, -tube.u_margin(t, 1))      # q_rej - mu_rej >= 0 robustly
 
     # ---- ramp on q_ext between consecutive steps (first step free, D-021)
     for t in range(1, N):
@@ -218,7 +219,7 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec, tube=None) -> Lifted:
         # q_rej,t + cop_ref * q <= cop_ref * chiller_share for activated steps
         for t in range(m_act):
             r_ = np.zeros(nz); r_[rej_col(t)] = 1.0; r_[iq] = cop_ref
-            add(r_, cop_ref * chiller_share - tube.u_margin(t))
+            add(r_, cop_ref * chiller_share - tube.u_margin(t, rej_ch))
     elif spec.delivery == "cumulative":
         # Product semantics (D-048), BOTH required:
         # (i) depth during the activation window: P_t <= P_base - q for t < m_act
@@ -229,12 +230,12 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec, tube=None) -> Lifted:
         #     delivered cancels the window's positive delivered).
         for t in range(m_act):
             r_ = np.zeros(nz); r_[rej_col(t)] = 1.0; r_[iq] = cop_ref
-            add(r_, cop_ref * chiller_share - tube.u_margin(t))
+            add(r_, cop_ref * chiller_share - tube.u_margin(t, rej_ch))
         r_ = np.zeros(nz)
         delivery_margin = 0.0
         for t in range(N):
             r_[rej_col(t)] = dt / cop_ref
-            delivery_margin += (dt / cop_ref) * tube.u_margin(t)
+            delivery_margin += (dt / cop_ref) * tube.u_margin(t, rej_ch)
         r_[iq] = m_act * dt          # r*DH = m_act*dt by construction of m_act
         add(r_, N * dt * chiller_share - delivery_margin)
     else:

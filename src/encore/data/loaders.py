@@ -47,15 +47,32 @@ def load_day_prices(date: str) -> dict:
 
 
 def load_day_weather(date: str) -> dict:
-    """Hourly T_amb and T_dew [degC] for one local (US/Central) day from KIAH ASOS."""
+    """Hourly T_amb / T_dew observations [degC] for one local (US/Central) day from
+    KIAH ASOS, plus the REAL day-ahead NWP dew forecast and its residual where the
+    forecast archive covers the date (2024+, D-050)."""
     w = pd.read_csv(WEATHER / "kiah_asos_2023_2024.csv", parse_dates=["valid"])
     w["local"] = w["valid"].dt.tz_localize("UTC").dt.tz_convert("US/Central")
     d = w[w["local"].dt.strftime("%Y-%m-%d") == date].sort_values("local")
     hourly = d.groupby(d["local"].dt.hour).agg(tmpf=("tmpf", "mean"),
                                                dwpf=("dwpf", "mean"))
     hourly = hourly.reindex(range(24)).interpolate(limit_direction="both")
-    return {"T_amb_hourly": f_to_c(hourly["tmpf"].to_numpy()),
-            "T_dew_hourly": f_to_c(hourly["dwpf"].to_numpy())}
+    out = {"T_amb_hourly": f_to_c(hourly["tmpf"].to_numpy()),
+           "T_dew_hourly": f_to_c(hourly["dwpf"].to_numpy())}
+
+    fc_path = WEATHER / "kiah_dew_forecast_2024.csv"
+    if fc_path.exists():
+        fc = pd.read_csv(fc_path, index_col=0, parse_dates=True).reset_index(names="time")
+        fc["local"] = fc["time"].dt.tz_convert("US/Central")
+        f = fc[fc["local"].dt.strftime("%Y-%m-%d") == date].sort_values("local")
+        if len(f) >= 20:
+            g = f.groupby(f["local"].dt.hour)["dew_fc_day1_C"].mean()
+            g = g.reindex(range(24)).interpolate(limit_direction="both")
+            out["T_dew_fc_hourly"] = g.to_numpy()
+            out["dew_resid_hourly"] = out["T_dew_hourly"] - out["T_dew_fc_hourly"]
+    if "T_dew_fc_hourly" not in out:
+        out["T_dew_fc_hourly"] = out["T_dew_hourly"]      # pre-archive fallback
+        out["dew_resid_hourly"] = np.zeros(24)
+    return out
 
 
 def rtm_to_5min(rtm_15: np.ndarray) -> np.ndarray:

@@ -46,8 +46,22 @@ OUT = REPO / "results" / "phase5"
 SEED = 20260610
 T_WB = 22.0
 SEEDS = (0, 1, 2)
-WEEKS = {"mild": "2024-04-01", "humid": "2023-08-14", "scarcity": "2024-01-14"}
 N_SAA = 20
+SOURCE = "alibaba"       # real dedicated-ML-hall trace (D-050)
+N_STATES = 3             # the gate-approved S2 product, certified (D-049)
+# 10 weeks spanning 2024 (forecast archive coverage; >=500 obligations for tight CIs)
+WEEKS = {
+    "w03-jan-scarcity": "2024-01-14",   # Winter Storm Heather
+    "w07-feb": "2024-02-12",
+    "w11-mar": "2024-03-11",
+    "w14-apr-mild": "2024-04-01",
+    "w20-may": "2024-05-13",
+    "w24-jun": "2024-06-10",
+    "w29-jul": "2024-07-15",
+    "w33-aug-humid": "2024-08-12",
+    "w37-sep": "2024-09-09",
+    "w42-oct": "2024-10-14",
+}
 
 
 def week_dates(start: str):
@@ -70,7 +84,8 @@ def day_offers(p, cfg, cb, pool_saa, prices, weather, K):
     contexts, bx_cert, bx_saa = [], [], []
     for h in range(24):
         contexts.append({
-            "T_dew_fc": float(weather["T_dew_hourly"][h]), "T_wb": T_WB,
+            # REAL day-ahead NWP dew forecast (D-050); realized dew is the observation
+            "T_dew_fc": float(weather["T_dew_fc_hourly"][h]), "T_wb": T_WB,
             "pi_cap": float(prices["pi_cap_hourly"][h]),
             "pi_rt_event": float(rtm_h[h]), "pi_rt_recovery": float(rtm_h[(h + 1) % 24]),
         })
@@ -78,7 +93,8 @@ def day_offers(p, cfg, cb, pool_saa, prices, weather, K):
         bx_saa.append(saa_box_from_pool(pool_saa, h))
     pr = cfg["product"]
     kw = dict(d_min=float(pr["d_min"]), p_act=pr["p_act"],
-              c_deg_per_Kh=pr["c_deg_per_Kh"], T_thr=pr["T_thr_C"], n_grid=10)
+              c_deg_per_Kh=pr["c_deg_per_Kh"], T_thr=pr["T_thr_C"], n_grid=10,
+              n_states=N_STATES)
     # readiness=False (D-048): terminal startability is guaranteed by construction —
     # adjacency pruning leaves a recovery hour and the sprint idle law restores the
     # e0-ball ready state well within it; the LP terminal (immediate re-delivery)
@@ -96,13 +112,13 @@ def main():
     p = load_params()
     cfg = load_market_config()
     pr = cfg["product"]
-    K = lqr_gain(p, r_u=1.0 / (10e3) ** 2)
+    K = lqr_gain(p, N_STATES, r_u=1.0 / (10e3) ** 2)
 
-    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit")
+    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", source=SOURCE)
     feats, recs = pool_fit.features_records()
     cb = ConditionalBoxes(feats, recs, eps=0.1, k=80, k_cal=150)
-    print(f"W(c) fit on {len(recs)} real records (trace days 0-20, causal climatology); "
-          f"evaluation replays HELD-OUT days 21-30 (D-046)")
+    print(f"W(c) fit on {len(recs)} real records ({SOURCE}, causal climatology); "
+          f"evaluation replays the HELD-OUT trace-day block (D-046/D-050)")
 
     rows = []
     for week, start in WEEKS.items():
@@ -113,17 +129,18 @@ def main():
             rtm_h = prices["rtm_15min"].reshape(24, 4).mean(axis=1)
             base = baseline_day(p, T_WB)
             offers = day_offers(p, cfg, cb,
-                                RealRecordPool(p.Q_IT_nom, seed=SEED + 1, role="fit"),
+                                RealRecordPool(p.Q_IT_nom, seed=SEED + 1, role="fit",
+                                               source=SOURCE),
                                 prices, weather, K)
             for seed in SEEDS:
                 rng = np.random.default_rng(stable_seed(DATE, seed))
                 pool = RealRecordPool(p.Q_IT_nom, seed=stable_seed("replay", seed),
-                                      role="eval")
+                                      role="eval", source=SOURCE)
                 activations = rng.uniform(size=24) < pr["p_act"]
                 w_day = np.zeros((24, 12))
-                dew_res = np.zeros(24)
+                dew_res = np.asarray(weather["dew_resid_hourly"], dtype=float)  # REAL
                 for h in range(24):
-                    w_day[h], dew_res[h] = pool.draw_hour(h)
+                    w_day[h], _ = pool.draw_hour(h)
 
                 for name, plans, ctl in (("B1", offers["B4"], "idle"),
                                          ("B2", offers["B2"], "mpc"),

@@ -1,6 +1,6 @@
 {
-  "timestamp_utc": "2026-06-11T04:24:13.571551+00:00",
-  "git_hash": "1b1a0fe2a6946799fe2ad7628bf05f26c8269900",
+  "timestamp_utc": "2026-06-11T05:01:10.957249+00:00",
+  "git_hash": "5ebeca7e014ea2f100552020fd07e7110cdd2e32",
   "config_path": "E:\\Project-git\\ENvelope-Certified Offering and REcourse\\config\\plant.yaml",
   "config_sha256": "ee76c5a5f4768b5cc993f92f6b8216dfb1df31c2bc2cf7b2662386fc6cb1bbb3",
   "seed": 20260610,
@@ -10,15 +10,7 @@
   "scipy": "1.17.1",
   "experiment": "phase6_F1_context",
   "hod": 14,
-  "kappa_grid": [
-    0.1,
-    0.25,
-    0.4,
-    0.5,
-    0.65,
-    0.8,
-    1.0
-  ],
-  "kappa_ref": 0.5,
-  "regime_feature_finding": "non-informative on Borg-2019 (D-043)"
+  "n_states": 3,
+  "alibaba_kappa": 0.7737739532890432,
+  "alibaba_Ft30_kW": 0.0
 }

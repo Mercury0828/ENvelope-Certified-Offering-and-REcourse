@@ -53,10 +53,11 @@ def simulate_policy(p: PlantParams, cert: dict, w_steps: np.ndarray, dew_res: fl
     simulator must pass the carried state — hour boundaries never teleport, D-046).
     """
     spec: EnvelopeSpec = cert["spec"]
+    n = spec.n_states
     N = spec.horizon_steps
     m_act = activation_steps(spec)
-    Ad, Bud, Bwd = discrete_matrices(p, 2, p.dt_ctrl)
-    X_nom, U_nom, K = cert["x_nom"], cert["u_nom"], cert["K"]
+    Ad, Bud, Bwd = discrete_matrices(p, n, p.dt_ctrl)
+    X_nom, U_nom, K = cert["x_nom"], cert["u_nom"], np.atleast_2d(cert["K"])
     base = cert["base"]
     T_dew_real = spec.T_dew + dew_res
     floor_real = T_in_floor(p, T_dew_real)
@@ -68,17 +69,24 @@ def simulate_policy(p: PlantParams, cert: dict, w_steps: np.ndarray, dew_res: fl
     clip_amount = 0.0
     for t in range(N):
         if controller is None:
-            u = float(U_nom[t, 0] + K[0] @ (x - X_nom[t]))
+            u = U_nom[t] + K @ (x - X_nom[t])
         else:
-            u = float(controller(t, x))
-        lb, ub = q_ext_bounds(p, x[1], T_dew_real)
-        u_cl = float(np.clip(u, lb, ub))
-        clip_amount = max(clip_amount, abs(u_cl - u))
-        x = Ad @ x + Bud @ [u_cl] + Bwd @ [p.Q_IT_nom + w_steps[t]]
+            u = np.atleast_1d(controller(t, x))
+        # physical actuation: clip q_ext into the REALIZED U(x); q_rej into equipment
+        lb, ub = q_ext_bounds(p, x[1], T_dew_real, T_f=x[2] if n == 3 else None)
+        u_cl = u.copy()
+        u_cl[0] = float(np.clip(u[0], lb, ub))
+        if n == 3:
+            u_cl[1] = float(np.clip(u[1], 0.0, p.q_rej_max))
+        clip_amount = max(clip_amount, float(np.abs(u_cl - u).max()))
+        x = Ad @ x + Bud @ u_cl + Bwd @ [p.Q_IT_nom + w_steps[t]]
         X.append(x.copy())
-        U.append(u_cl)
-        P.append(base["P_pump_W"] + u_cl / base["cop_ref"])
+        U.append(u_cl[0])
+        rej = u_cl[0] if n == 2 else u_cl[1]
+        P.append(base["P_pump_W"] + rej / base["cop_ref"])
         viol_T = max(viol_T, x[0] - p.T_max)
+        if n == 3:
+            viol_T = max(viol_T, x[2] - p.T_f_max)
 
     # settlement counts the WHOLE hour (guide 5.3, D-048)
     delivered = sum((base["P_base_W"] - P[t]) * p.dt_ctrl for t in range(N))
@@ -98,10 +106,12 @@ def simulate_policy(p: PlantParams, cert: dict, w_steps: np.ndarray, dew_res: fl
 
 
 def fallback_controller(cert: dict):
-    """The certified policy as a controller callback."""
-    X_nom, U_nom, K = cert["x_nom"], cert["u_nom"], cert["K"]
+    """The certified policy as a controller callback (returns the input vector)."""
+    X_nom, U_nom = cert["x_nom"], cert["u_nom"]
+    K = np.atleast_2d(cert["K"])
 
     def ctl(t, x):
-        return float(U_nom[t, 0] + K[0] @ (x - X_nom[t]))
+        u = U_nom[t] + K @ (np.asarray(x) - X_nom[t])
+        return float(u[0]) if u.size == 1 else u
 
     return ctl

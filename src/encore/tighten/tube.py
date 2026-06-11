@@ -1,28 +1,21 @@
-"""Tube margins with a fixed feedback gain (guide 6.3/6.5, D-027).
+"""Tube margins with a fixed feedback gain (guide 6.3/6.5, D-027/D-046/D-047/D-049).
 
 Error dynamics under the fallback policy u = u_nom + K (x - x_nom):
 
-    e_{t+1} = (A_d + B_d K) e_t + E_d w_t,   |w_t| <= w_Q  (heat-load deviation, W)
+    e_{t+1} = (A_d + B_d K) e_t + E_d w_t,   0 <= w_t <= w_Q,  sum_t w_t dt <= E_budget
 
-With e_0 = 0 (the hour starts from a measured state), the reachable error set under the
-polytopic disturbance set W = {0 <= w_t <= w_Q, sum_t w_t dt <= E_budget} (D-031) is
-bounded componentwise by the support function
+with e_0 in the +-e0_K componentwise ball (the pre-positioning accuracy, D-047).
+Margins are the exact support function of this disturbance polytope (greedy
+largest-coefficients-first fill, D-031) plus the decaying initial-error term:
 
-    M_t[j] = max_w sum_{i<t} |A_K^i E_d|_j w_i   over W
-           = greedy fill of the largest coefficients at w_Q until the budget runs out
-    mu_t = |K| M_t                               (input margin, W)
+    M_t[j]  = max_w sum_{i<t} |A_K^i E_d|_j w_i  +  (|A_K^t| e0)_j      [K]
+    mu_t[c] = |K_c| M_t                                                  [W], per channel
 
-(E_budget = None recovers the persistent-box margins sum |A_K^i E_d| w_Q — which are so
-conservative they empty the envelope; kept for the documentation experiment.)
+Feasibility of the margin-tightened lifted LP is the fallback certificate (D-028).
 
-Every constraint row of the lifted deliverability polyhedron is tightened by the
-worst-case contribution of (e_t, K e_t); the condensation floor is robustified by the
-dew-point residual bound (T_dew -> T_dew + w_D). Feasibility of the *tightened* LP is
-therefore exactly the certificate that the fallback policy satisfies safety and
-delivery for ALL disturbances in W(c) — the Thm-2 mechanism.
-
-Scope: certification on the 2-state envelope (the guide's default geometry, D-013);
-margins are computed generically but n=3 certification is deferred (D-027).
+Supports BOTH plant models (D-049 extends D-027's 2-state scoping):
+  n=2: u = (q_ext,), K is 1x2
+  n=3: u = (q_ext, q_rej), K is 2x3 — certifies the S2 facility-loop product
 """
 
 from __future__ import annotations
@@ -43,7 +36,7 @@ class TubeMargins:
     K: np.ndarray            # (m, n): u = u_nom + K e
     A_K: np.ndarray
     M: np.ndarray            # (N+1, n) state margins [K]
-    mu: np.ndarray           # (N+1,) input margin [W] (first input channel)
+    mu: np.ndarray           # (N+1, m) input margins [W] per channel
     w_Q: float               # heat-deviation bound [W]
     w_D: float               # dew-point residual bound [K]
 
@@ -54,11 +47,11 @@ class TubeMargins:
     def x_margin(self, t: int, j: int) -> float:
         return float(self.M[t, j])
 
-    def u_margin(self, t: int) -> float:
-        return float(self.mu[t])
+    def u_margin(self, t: int, ch: int = 0) -> float:
+        return float(self.mu[t, ch])
 
     def ramp_margin(self, t: int) -> float:
-        return float(self.mu[t] + self.mu[t - 1]) if t >= 1 else float(self.mu[t])
+        return float(self.mu[t, 0] + self.mu[t - 1, 0]) if t >= 1 else float(self.mu[t, 0])
 
     def terminal_margin(self, H_row: np.ndarray, N: int) -> float:
         return float(np.abs(np.asarray(H_row)) @ self.M[N])
@@ -68,9 +61,8 @@ def lqr_gain(p: PlantParams, n_states: int = 2, q_T: float = 1.0,
              r_u: float = 1.0 / (5e4) ** 2) -> np.ndarray:
     """Fixed fallback gain via discrete LQR on the virtual-input model.
 
-    r_u penalizes input use (per W^2); the default corresponds to ~50 kW of feedback
-    authority per K of error — chosen offline once (sweepable, logged in experiment).
-    Returns K with the convention u = u_nom + K e (stabilizing: A + B K Hurwitz-d).
+    r_u penalizes input use (per W^2) on every channel; chosen offline once.
+    Returns K with the convention u = u_nom + K e (stabilizing).
     """
     Ad, Bud, _ = discrete_matrices(p, n_states, p.dt_ctrl)
     Q = q_T * np.eye(n_states)
@@ -83,23 +75,19 @@ def lqr_gain(p: PlantParams, n_states: int = 2, q_T: float = 1.0,
 def build_tube(p: PlantParams, n_states: int, N: int, w_Q: float, w_D: float,
                K: np.ndarray | None = None, E_budget: float | None = None,
                e0_K: float = 1.5) -> TubeMargins:
-    """e0_K: componentwise bound [K] on the INITIAL state error e_0 — closes the
-    warm-start gap (D-046/D-047): the certificate covers any event start within e0_K of
-    the committed ready state, not just e_0 = 0. Default derived from the idle law's
-    one-hour convergence: worst pre-positioning gap ~8 K (nominal->dry-ready) decays by
-    exp(-3600 s / ~2080 s) < 0.18, so |e_0| <= 1.5 K after one idle hour."""
-    if n_states != 2:
-        raise NotImplementedError("tube certification scoped to the 2-state model (D-027)")
+    """e0_K: componentwise bound [K] on the INITIAL state error e_0 — covers any event
+    start within e0_K of the committed ready state (D-047). Default derived from the
+    sprint idle law's one-hour convergence (D-048)."""
     Ad, Bud, Ed = discrete_matrices(p, n_states, p.dt_ctrl)
     K = lqr_gain(p, n_states) if K is None else np.asarray(K, dtype=float)
     A_K = Ad + Bud @ K
+    m = Bud.shape[1]
 
-    # coefficient sequence |A_K^i E_d| for i = 0..N-1, and |A_K^t| for the e_0 term
     coefs = np.zeros((N, n_states))
     Ai_Ed = Ed[:, 0].copy()
     A_pow = np.eye(n_states)
-    e0_term = np.zeros((N + 1, n_states))
     e0_vec = np.full(n_states, float(e0_K))
+    e0_term = np.zeros((N + 1, n_states))
     e0_term[0] = np.abs(A_pow) @ e0_vec
     for i in range(N):
         coefs[i] = np.abs(Ai_Ed)
@@ -110,9 +98,9 @@ def build_tube(p: PlantParams, n_states: int, N: int, w_Q: float, w_D: float,
     n_budget = np.inf if E_budget is None else E_budget / (w_Q * p.dt_ctrl) if w_Q > 0 else 0.0
 
     M = np.zeros((N + 1, n_states))
-    mu = np.zeros(N + 1)
+    mu = np.zeros((N + 1, m))
     M[0] = e0_term[0]
-    mu[0] = float((np.abs(K) @ M[0])[0])
+    mu[0] = np.abs(K) @ M[0]
     for t in range(1, N + 1):
         for j in range(n_states):
             c = np.sort(coefs[:t, j])[::-1]
@@ -123,7 +111,7 @@ def build_tube(p: PlantParams, n_states: int, N: int, w_Q: float, w_D: float,
                 M[t, j] = w_Q * (c[:full].sum()
                                  + (n_budget - full) * (c[full] if full < t else 0.0))
             M[t, j] += e0_term[t, j]
-        mu[t] = float((np.abs(K) @ M[t])[0])
+        mu[t] = np.abs(K) @ M[t]
     return TubeMargins(K=K, A_K=A_K, M=M, mu=mu, w_Q=w_Q, w_D=w_D)
 
 

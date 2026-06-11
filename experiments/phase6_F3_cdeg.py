@@ -36,7 +36,7 @@ OUT = REPO / "results" / "phase6"
 SEED = 20260610
 C_DEG_GRID = [0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0]
 DAYS = {"scarcity (2024-01-16)": "2024-01-16", "mild (2024-04-03)": "2024-04-03"}
-KAPPA = 0.5    # steadier-hall reference scenario (D-047/D-048) — offers exist here
+SOURCE, SCALE = "borg", 0.5   # trainhall scenario config (D-050) — offers exist here
 
 
 def main():
@@ -44,8 +44,8 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     p = load_params()
     cfg = load_market_config()
-    K = lqr_gain(p, r_u=1.0 / (10e3) ** 2)
-    pool = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", scale=KAPPA)
+    K = lqr_gain(p, p5.N_STATES, r_u=1.0 / (10e3) ** 2)
+    pool = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", source=SOURCE, scale=SCALE)
     feats, recs = pool.features_records()
     cb = ConditionalBoxes(feats, recs, eps=0.1, k=80, k_cal=150)
 
@@ -56,7 +56,8 @@ def main():
         rtm_h = prices["rtm_15min"].reshape(24, 4).mean(axis=1)
         contexts, bx = [], []
         for h in range(24):
-            contexts.append({"T_dew_fc": float(weather["T_dew_hourly"][h]), "T_wb": p5.T_WB,
+            contexts.append({"T_dew_fc": float(weather["T_dew_fc_hourly"][h]),
+                             "T_wb": p5.T_WB,
                              "pi_cap": float(prices["pi_cap_hourly"][h]),
                              "pi_rt_event": float(rtm_h[h]),
                              "pi_rt_recovery": float(rtm_h[(h + 1) % 24])})
@@ -66,7 +67,7 @@ def main():
                                 d_min=float(cfg["product"]["d_min"]),
                                 p_act=cfg["product"]["p_act"],
                                 c_deg_per_Kh=c_deg, T_thr=cfg["product"]["T_thr_C"],
-                                n_grid=12)
+                                n_grid=12, n_states=p5.N_STATES)
             rows.append({"day": label, "c_deg": c_deg,
                          "sum_q_kW": sum(pl.q_W for pl in plans) / 1e3,
                          "exp_value_usd": sum(pl.expected_value_usd for pl in plans),
@@ -90,8 +91,8 @@ def main():
     ax2.set_xlabel("degradation proxy $c_{deg}$ [\\$/K·h]")
     ax2.set_ylabel("expected offering value [\\$/day]")
     ax1.legend(fontsize=8)
-    fig.suptitle(f"F3 — degradation-cost sensitivity of the certified offer "
-                 f"(d = 30 min, κ = {KAPPA})")
+    fig.suptitle(f"F3 — degradation-cost sensitivity of the certified S2 offer "
+                 f"(d = 30 min, {SOURCE} trace)")
     fig.tight_layout()
     savefig(fig, OUT / "F3_cdeg")
     plt.close(fig)

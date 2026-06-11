@@ -69,21 +69,22 @@ class HourPlan:
     expected_value_usd: float
 
 
-def ready_state_for(p: PlantParams, T_dew_fc: float) -> np.ndarray:
-    return steady_state(p, 2, p.Q_IT_nom, T_in_floor(p, T_dew_fc))[0]
+def ready_state_for(p: PlantParams, T_dew_fc: float, n_states: int = 2) -> np.ndarray:
+    return steady_state(p, n_states, p.Q_IT_nom, T_in_floor(p, T_dew_fc))[0]
 
 
 def envelope_for(p: PlantParams, spec: EnvelopeSpec, x_ready, kind: str,
                  box: Box | None = None, K=None):
     """(F_W, tube) for the chosen certification style."""
+    n = spec.n_states
     if kind == "certified":
-        tube = build_tube(p, 2, spec.horizon_steps, w_Q=box.w_Q_sym, w_D=box.w_D,
+        tube = build_tube(p, n, spec.horizon_steps, w_Q=box.w_Q_sym, w_D=box.w_D,
                           K=K, E_budget=box.E_hi)
         return certified_max_q(p, spec, tube, x_ready), tube
     if kind == "deterministic":            # B2: naive envelope, no tightening
         return max_q(build_lifted(p, spec), x_ready), None
     if kind == "saa":                      # B3: empirical-scenario box, no guarantee
-        tube = build_tube(p, 2, spec.horizon_steps, w_Q=box.w_Q_sym, w_D=box.w_D,
+        tube = build_tube(p, n, spec.horizon_steps, w_Q=box.w_Q_sym, w_D=box.w_D,
                           K=K, E_budget=box.E_hi)
         return certified_max_q(p, spec, tube, x_ready), tube
     raise ValueError(kind)
@@ -103,7 +104,7 @@ def degradation_usd(p: PlantParams, spec: EnvelopeSpec, tube, x_ready, q: float,
 def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=None,
                 d_min: float = 30.0, p_act: float = 0.15, c_deg_per_Kh: float = 2.0,
                 T_thr: float = 70.0, n_grid: int = 15,
-                readiness: bool = False) -> list[HourPlan]:
+                readiness: bool = False, n_states: int = 2) -> list[HourPlan]:
     """One HourPlan per hour. contexts[h]: T_dew_fc, T_wb, pi_cap ($/MWh),
     pi_rt_event, pi_rt_recovery ($/MWh)."""
     plans = []
@@ -115,14 +116,15 @@ def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=N
         # own ready state (caught in F1: all certified curves collapsed for dew >= 16).
         box = boxes[h] if boxes is not None else None
         dew_guard = box.w_D if (box is not None and kind in ("certified", "saa")) else 0.0
-        x_ready = ready_state_for(p, c["T_dew_fc"] + dew_guard)
+        x_ready = ready_state_for(p, c["T_dew_fc"] + dew_guard, n_states)
         # Terminal readiness: V1 deliberately uses NO terminal constraint (D-041).
         # A ready-state-box terminal was tried and provably over-tightens (F-tilde = 0
         # everywhere — naive return-to-start terminals kill the product, which is
         # exactly why guide 6.3 defines readiness as a SET). Wiring the Phase-2
         # readiness polygon R(q) into committed plans is Phase-5 work; until then the
         # day simulator falls back to the D-1 plan on hot starts and reports the count.
-        spec = EnvelopeSpec(n_states=2, T_dew=c["T_dew_fc"], T_wb=c["T_wb"], d_min=d_min)
+        spec = EnvelopeSpec(n_states=n_states, T_dew=c["T_dew_fc"], T_wb=c["T_wb"],
+                            d_min=d_min)
         F, tube = envelope_for(p, spec, x_ready, kind, box=box, K=K)
         F = max(F, 0.0)
 
@@ -135,9 +137,8 @@ def make_offers(p: PlantParams, contexts: list[dict], kind: str, boxes=None, K=N
                          - p_act * (r_act * q * 3600.0 * shift + deg))
                 if value > best_v:
                     best_q, best_v = float(q), float(value)
-        # readiness terminal (D-041 resolution): commit only what is deliverable AND
-        # leaves the plant inside R(q) for the next hour's obligation
-        if readiness and best_q > 0:
+        # readiness terminal (D-041; 2-state geometry only — D-048 made it optional)
+        if readiness and best_q > 0 and n_states == 2:
             term = _readiness_terminal(p, spec, best_q)
             if term is not None:
                 spec = dc_replace(spec, terminal=term)

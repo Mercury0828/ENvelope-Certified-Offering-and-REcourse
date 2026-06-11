@@ -23,32 +23,35 @@ from ..market.offering import HourPlan
 STEPS_H = 12
 
 
-K_RECOVERY = 60e3      # [W/K] sprint gain on T_w for idle/recovery hours (D-048):
-                       # commands full extraction headroom when hot (clipped into the
+K_RECOVERY = 60e3      # [W/K] sprint gain for idle/recovery hours (D-048): commands
+                       # full extraction/rejection headroom when hot (clipped into the
                        # realized U(x) by the simulator), recovering a 15 K post-event
                        # excursion in ~20 min — one uncommitted hour between events
                        # (adjacency pruning) therefore restores the e0-ball ready state
                        # by construction, replacing the LP terminal constraint.
 
 
-def _idle_controller(p: PlantParams, target: np.ndarray, K: np.ndarray):
-    """Sprint track-to-target law: u = Q_IT + K_rec (T_w - target_w)."""
+def _idle_controller(p: PlantParams, target: np.ndarray, n: int):
+    """Sprint track-to-target law: q_ext on T_w error (+ q_rej on T_f error, n=3)."""
     def ctl(t, x):
-        return float(p.Q_IT_nom + K_RECOVERY * (np.asarray(x)[1] - target[1]))
+        x = np.asarray(x)
+        u_ext = p.Q_IT_nom + K_RECOVERY * (x[1] - target[1])
+        if n == 2:
+            return float(u_ext)
+        u_rej = p.Q_IT_nom + K_RECOVERY * (x[2] - target[2])
+        return np.array([u_ext, u_rej])
     return ctl
 
 
 def _idle_target(p: PlantParams, plan: HourPlan, next_plan: HourPlan | None,
-                 participates: bool) -> np.ndarray:
+                 participates: bool, n: int) -> np.ndarray:
     """Idle hours hold the NOMINAL operating point (the no-market baseline, D-035;
     floor-limited in humid weather) — pre-cooling to a ready state happens only when
-    the NEXT hour carries a commitment (the D-1 pre-positioning plan, D-045). The old
-    always-at-ready behavior parked idle plants warm enough that workload tails pushed
-    even the no-market B1 over T_max in humid weeks."""
+    the NEXT hour carries a commitment (the D-1 pre-positioning plan, D-045)."""
     if participates and next_plan is not None and next_plan.q_W > 0:
         return next_plan.x_ready
     T_in_idle = max(p.T_in_nom, plan.spec.T_dew + p.delta_cond)
-    return steady_state(p, 2, p.Q_IT_nom, T_in_idle)[0]
+    return steady_state(p, n, p.Q_IT_nom, T_in_idle)[0]
 
 
 def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
@@ -65,6 +68,8 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
                              # certificate's e0-ball (warm starts; D-046/D-047)
     clip_events = 0          # hours where the realized condensation floor clipped u
 
+    n = plans[0].spec.n_states
+    n_inputs = 1 if n == 2 else 2
     for h in range(24):
         plan = plans[h]
         activated = bool(activations[h]) and plan.q_W > 0 and controller != "idle"
@@ -75,28 +80,30 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
                 # actual state cannot start the committed event (insufficient
                 # re-positioning) — keep the D-1 plan from the ready state as the
                 # REFERENCE, but simulate from the TRUE carried state: feedback must
-                # genuinely absorb the gap (e_0 != 0, outside the certificate — counted,
-                # reported, and now actually exercised; D-046).
+                # genuinely absorb the gap (e_0 != 0; covered by the e0 ball when
+                # within 1.5 K, counted regardless; D-046/D-047).
                 infeasible_starts += 1
                 infeasible_hours.append(h)
                 traj = extract_trajectory(L, plan.x_ready, plan.q_W)
             cert = {"x_nom": traj[0], "u_nom": traj[1], "K": K, "q": plan.q_W,
                     "spec": plan.spec, "base": L.base}
-            if controller == "mpc":
+            if controller == "mpc" and n == 2:
                 ctl, st = mpc_controller(p, cert, tube=plan.tube)
                 out = simulate_policy(p, cert, w_day[h], dew_res_day[h], controller=ctl,
                                       x0=x)
                 switches += int(st["switched"])
             else:
+                # n=3 events run the certified fallback policy directly (D-049: the
+                # certificate IS the fallback; the cheap-MPC layer remains 2-state)
                 out = simulate_policy(p, cert, w_day[h], dew_res_day[h], x0=x)
         else:
             L = build_lifted(p, plan.spec)          # for base power bookkeeping
             target = _idle_target(p, plan, plans[h + 1] if h < 23 else None,
-                                  participates=(controller != "idle"))
+                                  participates=(controller != "idle"), n=n)
             cert = {"x_nom": np.tile(target, (STEPS_H + 1, 1)),
-                    "u_nom": np.full((STEPS_H, 1), p.Q_IT_nom), "K": K,
+                    "u_nom": np.full((STEPS_H, n_inputs), p.Q_IT_nom), "K": K,
                     "q": 0.0, "spec": plan.spec, "base": L.base}
-            ctl = _idle_controller(p, target, K)
+            ctl = _idle_controller(p, target, n)
             out = simulate_policy(p, cert, w_day[h], dew_res_day[h], controller=ctl,
                                   x0=x)
         # state continuity: hour h+1 starts where hour h ended (overwrite x)

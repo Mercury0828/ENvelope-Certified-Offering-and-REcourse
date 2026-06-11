@@ -40,8 +40,7 @@ OUT = REPO / "results" / "phase6"
 SEED = 20260610
 DATE = "2024-01-16"
 SEEDS = range(5)
-KAPPA = 0.5     # steadier-hall reference scenario (D-047) — B4 actually offers here;
-                # stress disturbances are drawn from the SAME kappa-scaled pool
+SOURCE, SCALE = "borg", 0.5   # trainhall scenario config (D-050) — B4 offers here
 
 
 def burst_pool_draw(pool: RealRecordPool, rng) -> np.ndarray:
@@ -55,8 +54,9 @@ def main():
     p = load_params()
     cfg = load_market_config()
     pr = cfg["product"]
-    K = lqr_gain(p, r_u=1.0 / (10e3) ** 2)
-    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", scale=KAPPA)
+    K = lqr_gain(p, p5.N_STATES, r_u=1.0 / (10e3) ** 2)
+    pool_fit = RealRecordPool(p.Q_IT_nom, seed=SEED, role="fit", source=SOURCE,
+                              scale=SCALE)
     feats, recs = pool_fit.features_records()
     cb = ConditionalBoxes(feats, recs, eps=0.1, k=80, k_cal=150)
 
@@ -66,7 +66,7 @@ def main():
     base = baseline_day(p, p5.T_WB)
     offers = p5.day_offers(p, cfg, cb,
                            RealRecordPool(p.Q_IT_nom, seed=SEED + 1, role="fit",
-                                          scale=KAPPA),
+                                          source=SOURCE, scale=SCALE),
                            prices, weather, K)
 
     rows = []
@@ -74,7 +74,7 @@ def main():
         for seed in SEEDS:
             rng = np.random.default_rng(stable_seed(scen, seed))
             pool = RealRecordPool(p.Q_IT_nom, seed=stable_seed("stress", seed),
-                                  role="eval", scale=KAPPA)
+                                  role="eval", source=SOURCE, scale=SCALE)
             if scen == "consecutive":
                 activations = np.zeros(24, dtype=bool)
                 activations[13:19] = True

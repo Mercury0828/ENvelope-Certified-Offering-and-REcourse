@@ -1,22 +1,18 @@
-"""Real-data disturbance records: trace heat residuals + KIAH dew residuals (Phase 5).
+"""Real-data disturbance records (Phase 5/6; reworked per D-046/D-050).
 
-Heat channel (Google Borg hall profile, D-034): forecast = 31-day hour-of-day
-climatology of the 5-min mean profile (the best of the simple candidates tested:
-std 73 kW vs 102/77 for lag-day/smoothed-lag); residuals used UNscaled — the
-preprocessing's affine power map already places the hall in watts, and re-scaling to
-the nominal would double-count (D-042). The PEAK channel is excluded from W(c) records
-(non-simultaneity upper bound, data/README.md); it remains available for stress days.
+Heat channel: a hall power profile from a real cluster trace —
+  source="borg":    Google Borg 2019 cell-a (mixed batch, deliberately volatile)
+  source="alibaba": Alibaba PAI GPU cluster 2020 (dedicated ML training/inference —
+                    the owner-approved "real training hall", D-050)
+Forecast = hour-of-day climatology fit CAUSALLY on the first 2/3 of trace days; the
+day-block split (fit = first 2/3, eval = last 1/3) removes validation circularity.
 
-Dew channel: day-ahead NWP-skill residual model N(0, 1.2 K [est, literature DA dew
-RMSE]) clipped at ±4 K (D-042) — KIAH observations alone cannot reconstruct a real DA
-forecast, and 24-h persistence (std 5.1 K measured) is a strawman that would triple the
-residual and indict the product for a bad forecaster's sins. The measured persistence
-residuals remain available via dew_residual_hours() for sensitivity work.
+Dew channel (D-050, replaces D-042's N(0,1.2 K) [est] model): REAL day-ahead NWP
+forecast residuals for KIAH (Open-Meteo previous-runs archive, 2024; measured std
+2.01 K, q95 3.7 K), sampled conditioned on hour-of-day.
 
-Hourly records (per D-026/D-031 schema): (max 5-min heat residual, positive-residual
-energy, dew residual). Heat and dew sources are independent datasets paired by
-hour-of-day with seeded random day-matching (D-042). Step-level residual vectors are
-kept so simulations can replay REAL disturbance hours, not parametric draws.
+Hourly records per D-026/D-031: (max 5-min heat residual, positive-residual energy,
+dew residual). Step-level vectors are kept so simulations replay REAL hours.
 """
 
 from __future__ import annotations
@@ -26,86 +22,75 @@ import pandas as pd
 
 from ..plant.params import REPO_ROOT
 
-TRACE = REPO_ROOT / "data" / "traces" / "google2019a" / "hall_profile_5min.csv"
+TRACES = {
+    "borg": REPO_ROOT / "data" / "traces" / "google2019a" / "hall_profile_5min.csv",
+    "alibaba": REPO_ROOT / "data" / "traces" / "alibaba2020" / "hall_profile_5min.csv",
+}
 WEATHER = REPO_ROOT / "data" / "weather" / "kiah_asos_2023_2024.csv"
+DEW_FC = REPO_ROOT / "data" / "weather" / "kiah_dew_forecast_2024.csv"
 
 
-CLIM_DAYS = 21      # causal forecast window: climatology fit on trace days 0-20 only
-
-
-def heat_residual_hours(Q_nom_W: float, days: tuple[int, int] | None = None) -> dict:
+def heat_residual_hours(source: str = "borg",
+                        days: tuple[int, int] | None = None) -> dict:
     """Per trace-hour 12-step heat residual vectors [W] + hour-of-day labels.
-
-    The hour-of-day climatology (the operator's day-ahead forecast model) is computed
-    CAUSALLY from the first CLIM_DAYS trace days only — no look-ahead (D-046; an
-    earlier version averaged over the whole trace, letting each hour forecast itself).
-    `days = (lo, hi)` filters which trace days' hours are returned, enabling a strict
-    calibration/evaluation block split.
-    """
-    df = pd.read_csv(TRACE)
+    Climatology (the day-ahead forecast model) is fit on the first 2/3 of trace days
+    only (causal); `days` filters which days' hours are returned."""
+    df = pd.read_csv(TRACES[source])
     df["hod"] = (df["t_s"] // 3600) % 24
     df["P_W"] = df["P_mean_kW"] * 1e3
     df["day"] = df["t_s"] // 86400
-    clim_map = df[df["day"] < CLIM_DAYS].groupby("hod")["P_W"].mean()
+    n_days = int(df["day"].max()) + 1
+    clim_days = (2 * n_days) // 3
+    clim_map = df[df["day"] < clim_days].groupby("hod")["P_W"].mean()
     df["resid_W"] = df["P_W"] - df["hod"].map(clim_map)
     df["hour_idx"] = df["t_s"] // 3600
-    if days is not None:
-        df = df[(df["day"] >= days[0]) & (df["day"] < days[1])]
+    if days == "fit":
+        df = df[df["day"] < clim_days]
+    elif days == "eval":
+        df = df[df["day"] >= clim_days]
     vecs, hods = [], []
     for h, grp in df.groupby("hour_idx"):
         if len(grp) == 12:
             vecs.append(grp.sort_values("t_s")["resid_W"].to_numpy())
             hods.append(int(grp["hod"].iloc[0]))
-    return {"vectors": np.array(vecs), "hod": np.array(hods)}
+    return {"vectors": np.array(vecs), "hod": np.array(hods),
+            "n_days": n_days, "clim_days": clim_days}
 
 
-def dew_residual_hours() -> dict:
-    """Hourly dew residuals [K] vs 24-h persistence + hour-of-day labels."""
-    w = pd.read_csv(WEATHER, parse_dates=["valid"])
-    w["local"] = w["valid"].dt.tz_localize("UTC").dt.tz_convert("US/Central")
-    w = w.set_index("local").sort_index()
-    dew = ((w["dwpf"] - 32) * 5 / 9).resample("1h").mean().interpolate()
-    resid = (dew - dew.shift(24)).dropna()
-    return {"resid": resid.to_numpy(), "hod": resid.index.hour.to_numpy()}
+def dew_residual_pool() -> dict:
+    """REAL day-ahead dew forecast residuals [K] + hour-of-day labels (D-050)."""
+    df = pd.read_csv(DEW_FC, index_col=0, parse_dates=True)
+    return {"resid": df["resid_K"].to_numpy(),
+            "hod": df.index.hour.to_numpy()}
 
 
 class RealRecordPool:
     """Joint (heat, dew) hourly records + replayable step vectors, by hour-of-day.
 
-    role: "fit" = trace days 0-20 (W(c) calibration), "eval" = days 21-30 (held-out
-    replay in closed-loop experiments), "all" = everything (unit tests / coverage
-    studies). Splitting by day block removes the in-sample certificate-validation
-    circularity (D-046); both roles use the same CAUSAL climatology forecast.
+    role: "fit" (first 2/3 of trace days — calibration/offering), "eval" (last 1/3 —
+    held-out closed-loop replay), "all". scale: workload-volatility factor kappa
+    (D-047) applied to heat vectors; fit and replay must share it.
     """
 
     def __init__(self, Q_nom_W: float, dt_s: float = 300.0, seed: int = 0,
-                 role: str = "all", scale: float = 1.0):
-        """scale: workload-volatility factor kappa (D-047): heat residual vectors are
-        multiplied by kappa, transparently mapping the Borg cell-a hall to steadier
-        (or wilder) workload mixes. Fit and replay must use the SAME kappa."""
-        days = {"fit": (0, CLIM_DAYS), "eval": (CLIM_DAYS, 31), "all": None}[role]
-        self.heat = heat_residual_hours(Q_nom_W, days=days)
+                 role: str = "all", scale: float = 1.0, source: str = "borg"):
+        days = {"fit": "fit", "eval": "eval", "all": None}[role]
+        self.heat = heat_residual_hours(source, days=days)
         if scale != 1.0:
             self.heat["vectors"] = self.heat["vectors"] * float(scale)
-        self.dew = dew_residual_hours()
+        self.dew = dew_residual_pool()
         self.dt = dt_s
         self.rng = np.random.default_rng(seed)
 
-    DEW_SIGMA_K = 1.2      # [est] literature day-ahead dew-point RMSE (D-042)
-
-    def _draw_dew(self) -> float:
-        return float(np.clip(self.rng.normal(0.0, self.DEW_SIGMA_K), -4.0, 4.0))
+    def _draw_dew(self, hod: int | None = None) -> float:
+        pool = self.dew["resid"] if hod is None else \
+            self.dew["resid"][self.dew["hod"] == hod]
+        return float(self.rng.choice(pool))
 
     def regime_of(self, vec: np.ndarray) -> float:
-        """Volatility-regime statistic of one hour: log1p(mean |step residual| [kW])."""
         return float(np.log1p(np.abs(vec).mean() / 1e3))
 
     def features_records(self, rich: bool = False) -> tuple[np.ndarray, np.ndarray]:
-        """(features, records) table for ConditionalBoxes: one row per trace hour,
-        dew residual from the NWP-skill model (D-042). rich=True appends the PREVIOUS
-        hour's volatility regime (guide 6.2's 'recent forecast residuals' context,
-        D-043) — regimes persist hour-to-hour, which is what makes them day-ahead
-        usable as planned-job-mix proxies."""
         feats, recs = [], []
         vecs, hods = self.heat["vectors"], self.heat["hod"]
         for i in range(1, len(vecs)):
@@ -114,7 +99,7 @@ class RealRecordPool:
                 f.append(self.regime_of(vecs[i - 1]))
             feats.append(f)
             recs.append([vecs[i].max(), np.maximum(vecs[i], 0).sum() * self.dt,
-                         self._draw_dew()])
+                         self._draw_dew(int(hods[i]))])
         return np.array(feats), np.array(recs)
 
     def regime_quantiles(self, qs=(0.25, 0.75)) -> list[float]:
@@ -122,17 +107,16 @@ class RealRecordPool:
         return [float(np.quantile(vals, q)) for q in qs]
 
     @staticmethod
+    def hour_features(hod: int) -> np.ndarray:
+        return np.array([np.sin(2 * np.pi * hod / 24), np.cos(2 * np.pi * hod / 24)])
+
+    @staticmethod
     def hour_features_rich(hod: int, regime: float) -> np.ndarray:
         return np.array([np.sin(2 * np.pi * hod / 24), np.cos(2 * np.pi * hod / 24),
                          regime])
 
-    @staticmethod
-    def hour_features(hod: int) -> np.ndarray:
-        return np.array([np.sin(2 * np.pi * hod / 24), np.cos(2 * np.pi * hod / 24)])
-
     def draw_hour(self, hod: int) -> tuple[np.ndarray, float]:
-        """Replay a disturbance hour: (REAL 12-step heat residual [W], NWP-skill dew
-        residual [K])."""
+        """Replay a disturbance hour: (REAL heat residual steps [W], REAL dew residual [K])."""
         idx = np.where(self.heat["hod"] == hod)[0]
         vec = self.heat["vectors"][self.rng.choice(idx)]
-        return vec, self._draw_dew()
+        return vec, self._draw_dew(hod)
