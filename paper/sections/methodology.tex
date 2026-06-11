@@ -8,7 +8,8 @@ This section develops ENCORE for the problem of
 Section~\ref{sec:problem_formulation}. The deliverable set is characterized
 exactly as a context-dependent polyhedron whose maximal offer is the envelope
 $F(x,c)$; nested conformal disturbance sets and exact tube margins robustify
-it into $\Ft(x,c)$, from which the day-ahead offer is drawn; and a certified
+it into $\Ft(x,c)$ (constructed in Section~\ref{subsec:tube}), from which the
+day-ahead offer is drawn; and a certified
 fallback policy underwrites the real-time layer, so the delivery guarantee
 survives from commitment to metering. The remainder of the section
 establishes exactness of the envelope, the virtual-battery equivalent, the
@@ -54,9 +55,8 @@ two-clause end-to-end guarantee, and the computational profile.
 \end{tikzpicture}
 \caption{ENCORE pipeline. Offline, nested conformal sets and exact tube
 margins tighten the deliverability polyhedron into $\Ft(x,c)$; the day-ahead
-offer is drawn from its interior. Online, a certified fallback policy
-underwrites a deliberately simple rolling controller, so
-Theorem~\ref{thm:main} survives to settlement.}
+offer is drawn from its interior. Online, a certified fallback policy backs
+the rolling controller, so Theorem~\ref{thm:main} survives to settlement.}
 \label{fig:ctrl_arch}
 \vspace{-3mm}
 \end{figure}
@@ -98,77 +98,78 @@ program whose feasible set is the polyhedral section of $\mathcal{D}(c)$ at
 $x$, hence concave piecewise affine in the right-hand-side parameter $x$.
 (ii) The forecast enters only through the floor \eqref{eq:floor}, which
 tightens right-hand sides monotonically; raising $d$ adds window rows.
-(iii) The two-dimensional shadow of a polyhedron is computed exactly by
-recursive expansion; we use the Bretl--Lall vertex-search procedure. In
-cross-validation, $2{,}400$ random lifted points reproduce projected
-membership with zero anti-conservative errors.
+(iii) The two-dimensional shadow of a polyhedron is computed exactly by the
+Bretl--Lall vertex-search procedure~\cite{bretl2008testing}.
 \end{proof}
 
-Fig.~\ref{fig:slices} shows the certified object directly: exact slices of
-$\mathcal{D}(c)$ in the state plane, i.e., the startable sets
-$\mathcal{R}(q)=\{x:F(x,c)\ge q\}$ for three depths. The sets are nested
+Define the \emph{ready state} $x^{\mathrm{ready}}(c)$ as the steady state at
+nominal load with the supply temperature at the robust floor (the floor
+\eqref{eq:floor} evaluated at the forecast shifted by the calibrated dew
+margin of Section~\ref{subsec:sets}); it is the deepest pre-cool position the
+condensation constraint certifiably allows, and the offering pre-positions
+the plant there before each obligation. Fig.~\ref{fig:slices} shows the
+certified object directly: exact slices of $\mathcal{D}(c)$ in the state
+plane, i.e., the startable sets $\mathcal{R}(q)=\{x:F(x,c)\ge q\}$ for three
+depths. The sets are nested
 polytopes whose left boundary is the hotspot constraint propagated backward
 and whose right boundary is the condensation floor acting through
 \eqref{eq:Ux}: pre-cooling moves the state left and buys depth. Between the
 dry and humid panels the $150$\,kW region nearly vanishes while the
 $25$\,kW region barely moves, which is the geometric form of the weather
 coupling: humidity removes the \emph{deep} product first. Quantitatively,
-the calibrated hall sustains $53$--$59\%$ of baseline cooling power for
-$d=30$\,min from the pre-cooled ready state on a dry day, and the envelope
-collapses toward zero as the dew-point forecast approaches the supply floor:
-the thermal mass is a genuine half-hour resource whose size is
-weather-coupled.
+the calibrated model sustains $53$--$59\%$ of baseline cooling power for
+$d=30$\,min from the nominal operating state, and $90\%$ from the pre-cooled
+ready state on a dry day; the envelope collapses toward zero as the
+dew-point forecast approaches the supply floor. The thermal mass is a
+genuine half-hour resource whose size is weather-coupled.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{../results/phase2/envelope_slices.pdf}
 \caption{Exact deliverable-set slices $\mathcal{R}(q)$ in the
 $(\Tw,\Tj)$ plane for $q\in\{25,75,150\}$\,kW ($d=30$\,min; dry vs.\ humid
-day; markers: nominal and pre-cooled states).}
+day; markers: nominal operating state and pre-cooled ready state).}
 \label{fig:slices}
 \vspace{-3mm}
 \end{figure}
 
-Projecting $\mathcal{D}(c)$ onto aggregate power--energy coordinates yields a
-virtual battery~\cite{hao2015aggregate} whose every parameter is a function
-of the context.
-
-\begin{proposition}[Weather-coupled virtual battery]\label{prop:vb}
-The power--energy shadow of $\mathcal{D}(c)$ is the feasible set of a battery
-with state of charge $\sigma = \sum_i C_i (T_i^{\lim} - T_i)/\eta$, capacity
-and discharge limit
+Projecting $\mathcal{D}(c)$ onto aggregate power--energy coordinates gives a
+closed-form virtual-battery approximation~\cite{hao2015aggregate} whose
+every parameter is a function of the context: state of charge
+$\sigma = \sum_i C_i (T_i^{\lim} - T_i)/\eta$, capacity
 \begin{equation}
 E_{\mathrm{cap}}(c) = \frac{1}{\eta}\sum_i C_i\,\overline{\Delta T_i}(c),
-\qquad
-p^{\max}(x;c) = \frac{1}{\eta}\,\bar u^{\mathrm{ext}}(x;c),
 \label{eq:vb}
 \end{equation}
-and leakage set by the loop exchange rates, where
-$\overline{\Delta T_i}(c)$ is the admissible swing of node $i$ between the
-ready state at the robust floor \eqref{eq:floor} and its limit. On the
-calibrated hall, $E_{\mathrm{cap}}$ is $45$\,kWh per MW of IT load on a dry
-day and shrinks affinely as the dew-point forecast lifts the floor; the
-closed forms match the LP envelope within $3\%$ across the context grid
-(median $0.9\%$, worst case $2.7\%$).
-\end{proposition}
-
-The object handed to an aggregator is therefore \emph{a battery whose
-capacity depends on the weather}: a heat wave that raises ERCOT prices also
-raises the Houston dew point and shrinks every hall's certified storage,
-which couples the resource's availability to the price process and is
-captured by \eqref{eq:vb} at the offering stage.
+where $\overline{\Delta T_i}(c)$ is the admissible swing of node $i$ between
+the ready state and its limit, a discharge limit set by the chiller share
+net of the forced extraction $\ell(\Tw)$, a charge limit set by the
+extraction headroom in \eqref{eq:Ux}, and leakage set by the loop exchange
+rates. On the calibrated model, the coolant-loop tranche stores $45$\,kWh
+per MW of IT load on a dry day (the facility loop adds the larger, slower
+tranche that the three-state product certifies), every term shrinks affinely
+as the dew-point forecast lifts the floor, and the closed forms track the
+exact LP envelope within $3\%$ for durations $d\ge 15$\,min (median
+$0.9\%$, worst case $2.7\%$). The object handed to an aggregator is
+therefore \emph{a battery whose capacity depends on the weather}: a heat
+wave that raises scarcity prices also raises the coastal dew point and
+shrinks every hall's certified storage, which couples the resource's
+availability to the price process and is captured by \eqref{eq:vb} at the
+offering stage.
 
 Finally, the envelope carries a structural property of energy-settled thermal
 products. Let $\mathcal{R}(q)=\{x:F(x,c)\ge q\}$ be the startable set.
 
 \begin{proposition}[Commitment spacing]\label{prop:spacing}
-Under whole-hour settlement, the terminal state of any trajectory delivering
-a full-depth commitment lies outside $\mathcal{R}(q)$: consecutive full-depth
-delivery is infeasible, because the recovery energy of hour $h$ cancels the
-settled energy of hour $h{+}1$. Committed hours must therefore be separated
-by at least one uncommitted hour, which ENCORE enforces at the offering stage
-and uses for re-positioning (Lemma~\ref{lem:e0}).
+Under whole-hour settlement, consecutive full-depth delivery is infeasible:
+delivering $rq\dH$ in hour $h$ draws down the stored energy \eqref{eq:vb} by
+at least $rq\dH$, so the terminal state lies outside $\mathcal{R}(q)$, and
+restoring it during hour $h{+}1$ cancels that hour's settled energy.
 \end{proposition}
+
+ENCORE therefore separates committed hours by at least one uncommitted hour
+as a design rule, sufficient for all depths, and uses the gap for
+re-positioning (Lemma~\ref{lem:e0}).
 
 % ---------------------------------------------------------------------
 \subsection{Nested Context-Conditional Disturbance Sets}
@@ -181,24 +182,32 @@ For each context, $k$-nearest-neighbor split-conformal
 calibration~\cite{lei2018distribution} of the three statistics yields a
 \emph{budget polytope}
 \begin{equation}
-\mathcal{W}_{\varepsilon}(c)=\Bigl\{\xi:\ \max_t w_t \le \bar w(c),\
+\mathcal{W}_{\varepsilon}(c)=\Bigl\{\xi:\ \max_t |w_t| \le \bar w(c),\
 \textstyle\sum_t [w_t]_+\Delta t \le \bar E(c),\
 |\delta^{\mathrm{dew}}|\le \bar D(c)\Bigr\},
 \label{eq:box}
 \end{equation}
 with the miscoverage budget $\varepsilon$ allocated across the three faces a
-priori (any allocation summing to $\varepsilon$ is valid by the union bound),
-so that $\Pr\{\xi\in\mathcal{W}_\varepsilon(c)\}\ge 1-\varepsilon$ within the
-context neighborhood. The energy face is essential: against bursty traces an
-amplitude-only box is catastrophically conservative, while the budget face
-credits the fact that a burst cannot persist.
+priori (any allocation summing to $\varepsilon$ is valid by the union
+bound). The amplitude face is calibrated on the upper tail, which dominates
+this trace (negative residuals are verifiably smaller on the fit block); the
+energy face is essential, because against bursty traces an amplitude-only
+box is catastrophically conservative, while the budget face credits the fact
+that a burst cannot persist. Coverage,
+$\Pr\{\xi\in\mathcal{W}_\varepsilon(c)\}\ge 1-\varepsilon$, is
+\emph{marginal} over hours exchangeable within the context neighborhood (the
+deployed conditioning is hour-of-day; the dew-point forecast enters through
+the floor and the ready state), and it is verified out of sample in
+Section~\ref{sec:experimental_evaluation}. Commitment hours are selected by
+value, and the validation therefore tests coverage on the \emph{selected}
+hours directly rather than assuming it transfers.
 
 The two consequences of uncertainty identified in
 Section~\ref{subsec:problem} have different stakes, so they receive
 \emph{different} sets:
 \begin{equation}
 \Wsafe(c)=\mathcal{W}_{\epss}(c),\qquad
-\Wdel(c)=\mathcal{W}_{\epsd}(c)\subseteq\Wsafe(c),
+\Wdel(c)=\mathcal{W}_{\epsd}(c)\subseteq\Wsafe(c).
 \label{eq:nested}
 \end{equation}
 The \emph{safety set} uses a small, fixed $\epss$ ($0.05$ here) and is never
@@ -207,22 +216,23 @@ design variable} ($0.3$ at the design point): delivery failures beyond
 $\Wdel$ are priced by the $\gamma$-penalty of \eqref{eq:settlement}, so
 $\epsd$ trades certified depth against expected penalty and the offering
 objective internalizes the trade. Beyond $\Wsafe$, a sub-$\epss$-probability
-event, excursions are bounded by the passive plant and hardware frequency
-scaling; the case study measures them rather than assuming them away.
+event, excursions are bounded by the plant's passive dynamics;
+Section~\ref{sec:experimental_evaluation} reports the measured excursions.
 
 % ---------------------------------------------------------------------
 \subsection{Tube Tightening and the Fallback Certificate}
 \label{subsec:tube}
 
 Robustness enters the envelope through a fixed-gain error tube. Let $K$ be a
-stabilizing gain (an offline LQR design on the discretized plant) and define
+stabilizing gain (an offline linear-quadratic regulator design on the
+discretized plant) and define
 the \emph{fallback policy} $u_t=\bar u_t + K(x_t-\bar x_t)$ around a nominal
 plan $(\bar x,\bar u)\in\mathcal{D}(c)$. The error $e_t=x_t-\bar x_t$ obeys
 $e_{t+1}=(A+BK)e_t+Ew_t$ with $e_0$ in a pre-positioning ball, and the
-componentwise worst-case margins over a budget polytope admit an \emph{exact}
-greedy evaluation:
+componentwise worst-case margins over the budget polytope admit an
+\emph{exact} greedy evaluation:
 \begin{equation}
-M_t=\max_{\xi\in\mathcal{W}(c)}|e_t|
+M_t=\!\!\max_{\substack{\xi\in\mathcal{W}_\varepsilon(c)\\ |e_0|\le\bar e_0}}\!\!|e_t|
  = \mathrm{greedy}\bigl(|(A{+}BK)^iE|;\ \bar w,\bar E\bigr)
  + |(A{+}BK)^t|\,\bar e_0,
 \label{eq:margins}
@@ -232,8 +242,10 @@ budget largest-first, plus the decayed initial-error term; the induced input
 margins are $\mu_t=|K|M_t$. Each row of \eqref{eq:lifted} is then tightened
 by the margins of the states and inputs it touches, \emph{with safety rows
 (C1--C4) tightened by the $\Wsafe$-margins and the window-depth and
-hour-energy rows by the $\Wdel$-margins}, which yields the tightened
-envelope $\Ft(x,c)\le F(x,c)$.
+hour-energy rows by the $\Wdel$-margins}; the dew face shifts the floor,
+$\vartheta(c)$ evaluated at $\Tdew^{\mathrm{fc}}+\bar D(c)$, in both the
+constraint rows and the ready state. The result is the tightened envelope
+$\Ft(x,c)\le F(x,c)$.
 
 The ball $\bar e_0$ is not free: it is what the uncommitted hour of
 Proposition~\ref{prop:spacing} can actually deliver.
@@ -241,35 +253,41 @@ Proposition~\ref{prop:spacing} can actually deliver.
 \begin{lemma}[Disturbance-aware pre-positioning]\label{lem:e0}
 Let the uncommitted hour preceding an obligation run the recovery law
 $u=\bar Q + K_{\mathrm{rec}}(x-x^{\mathrm{ready}})$ elementwise on the loop
-states, with step contraction $\rho<1$. Then the start-of-hour error
-satisfies, componentwise,
+states, saturated into $\mathcal{U}(x;c)$, and suppose the realized
+disturbance magnitude is bounded by $\bar w$ over the hour. With effective
+gain $\kappa_{\mathrm{eff}}=\min\{K_{\mathrm{rec}},\,\mdot c_p\}$ (the
+saturation binds near the floor) and step contraction $\rho<1$ away from
+saturation, the start-of-hour error satisfies, componentwise,
 \begin{equation}
 |e_0| \;\le\; \rho^{N}\,|e_{\mathrm{init}}|
- \;+\; \bar w_{\mathrm{typ}}/K_{\mathrm{rec}},
+ \;+\; \bar w/\kappa_{\mathrm{eff}} .
 \label{eq:e0}
 \end{equation}
-where the second term is the disturbance-driven steady error. With the
-calibrated plant and $K_{\mathrm{rec}}=80$\,kW/K, a worst-case $15$\,K
-post-event excursion contracts below the disturbance floor within the hour,
-giving $\bar e_0=1.25$\,K.
 \end{lemma}
 
 The binding term in \eqref{eq:e0} is the disturbance-driven floor, not the
-transient: a certificate built on transient-only reasoning overstates
-readiness, and the validation of Section~\ref{sec:experimental_evaluation}
-accounts for every start accordingly.
+transient: a $15$\,K post-event excursion contracts within the hour, while
+the steady error never vanishes. The certificate's design ball
+$\bar e_0 = 1.25$\,K instantiates \eqref{eq:e0} at the fit block's median
+hourly disturbance magnitude with $K_{\mathrm{rec}}=80$\,kW/K and
+$\kappa_{\mathrm{eff}}=\mdot c_p$; disturbances above that level can push a
+start outside the ball, which is exactly what the validation of
+Section~\ref{sec:experimental_evaluation} counts. A certificate built on
+transient-only reasoning ($\bar e_0\approx 0.25$\,K) overstates readiness
+and fails in closed loop.
 
 \begin{theorem}[Two-clause end-to-end guarantee]\label{thm:main}
 Let $q\le\Ft(x^{\mathrm{ready}},c)$ be committed for hour $h$ with the
 spacing of Proposition~\ref{prop:spacing}, and let the hour run the fallback
 policy from any $x_0$ with $|x_0-x^{\mathrm{ready}}|\le\bar e_0$. Then:
 \emph{(i) Safety.} For every $\xi\in\Wsafe(c)$, constraints C1--C4 hold at
-every step and the realized inputs remain admissible; hence safety holds with
-probability at least $1-\epss$.
+every step and the realized inputs remain admissible; hence safety holds
+with probability at least $1-\epss$, marginally over context-hour draws.
 \emph{(ii) Delivery.} For every $\xi\in\Wdel(c)$, the window depth and the
 settled whole-hour energy obligations hold; hence the obligation is met with
-probability at least $1-\epsd$, and the expected shortfall penalty is bounded
-by $\epsd\,\gamma\,\picap_h r q \dH$.
+probability at least $1-\epsd$, and, with the shortfall cap of
+\eqref{eq:settlement}, the expected penalty is bounded by
+$\epsd\,\gamma\,\picap_h r q \dH$.
 \end{theorem}
 
 \begin{proof}
@@ -282,30 +300,29 @@ the original row along the realized trajectory: safety rows against
 $\Wsafe$, delivery rows against $\Wdel\subseteq\Wsafe$, whose error bound is
 also valid. The probability statements follow from the marginal validity of
 the conformal sets \eqref{eq:nested}; the penalty bound prices the
-complement of $\Wdel$ at the worst-case shortfall.
+complement of $\Wdel$ at the capped worst-case shortfall.
 \end{proof}
 
-On the operating day a rolling controller may improve on the fallback. At
-step $\tau$ of an activated hour, the controller re-solves the suffix of
-\eqref{eq:lifted} from the measured state with \emph{depth-indexed} margins
-$\{M_t - M_\tau\}_{t\ge\tau}$, the worst case of the disturbance still to
-come, and applies the first input; if the suffix problem is infeasible or the
-solver misses its deadline, the policy switches to the fallback for the
-remainder of the hour.
+The guarantee is per committed hour, conditional on the start premise
+$|e_0|\le\bar e_0$; across a day, spacing decouples the hours and a union
+bound compounds the miscoverage budgets over the committed hours.
 
-\begin{corollary}[Recursive feasibility of the rolling layer]
-\label{cor:mpc}
-Along any trajectory with $\xi\in\Wsafe(c)$ and $|e_0|\le\bar e_0$, the
-fallback continuation is feasible for every suffix problem, and any rolling
-controller that defaults to it on infeasibility inherits both clauses of
-Theorem~\ref{thm:main} unchanged.
-\end{corollary}
+\begin{remark}[Rolling improvement layer]\label{rem:mpc}
+A rolling controller may improve on the fallback by re-solving the suffix of
+\eqref{eq:lifted} from the measured state with margins restarted along the
+tube, defaulting to the fallback on infeasibility or a missed solver
+deadline. Inheriting Theorem~\ref{thm:main} additionally requires that the
+improvement steps keep the state inside the certified tube around the
+nominal plan; the evaluation of
+Section~\ref{sec:experimental_evaluation} runs the certified fallback
+itself during events, so the headline results carry the theorem's guarantee
+directly.
+\end{remark}
 
 The guarantee never depends on the online layer: the certificate \emph{is}
 the fallback. This inversion, a deliberately simple real-time layer
 underwritten by an offline certificate, is the opposite of robustifying the
-online controller itself as in~\cite{shen2026cdro}, and is what makes the
-method implementable on facility control hardware.
+online controller itself as in~\cite{shen2026cdro}.
 
 % ---------------------------------------------------------------------
 \subsection{Day-Ahead Offering and Computational Profile}
@@ -338,14 +355,15 @@ Algorithm~\ref{alg:encore} summarizes the pipeline.
 \renewcommand{\algorithmicrequire}{\textbf{Input:}}
 \renewcommand{\algorithmicensure}{\textbf{Output:}}
 \REQUIRE context $c_h$ and prices for each hour; fit-block records; gain $K$;
-levels $(\epss,\epsd)$; ball $\bar e_0$
+levels $(\epss,\epsd)$; ball $\bar e_0$; product $(d, p_{\mathrm{act}},
+\gamma)$
 \ENSURE spaced commitments $\{q_h\}$ with certificates
 \FOR{$h=1,\ldots,24$}
 \STATE Calibrate $\Wsafe(c_h)\supseteq\Wdel(c_h)$ via \eqref{eq:box}--\eqref{eq:nested}
 \STATE Compute margins \eqref{eq:margins} for both sets; tighten
 \eqref{eq:lifted} $\to \Ft(\cdot,c_h)$
-\STATE Pre-position target $x^{\mathrm{ready}}_h$ at the robust floor
-\eqref{eq:floor}
+\STATE Pre-position target $x^{\mathrm{ready}}_h$ at the floor
+\eqref{eq:floor} shifted by $\bar D(c_h)$
 \STATE Solve \eqref{eq:offer} on a $q$-grid $\to (q_h, \text{value}_h)$
 \ENDFOR
 \STATE Enforce spacing (Proposition~\ref{prop:spacing}): greedy by value,
@@ -356,7 +374,7 @@ zero out adjacent commitments
 
 The computational profile matches day-ahead practice. Every object in
 Algorithm~\ref{alg:encore} is a small linear program in the lifted variable
-($37$ decisions, ${\sim}200$ rows at $N=12$): one envelope evaluation takes
+($28$ decisions, $183$ rows at $N=12$): one envelope evaluation takes
 milliseconds, a full day's certification and offering takes seconds on a
 workstation, and the online layer is a fixed-gain affine policy plus an
 optional suffix LP re-solve, so no iterative robust optimization runs in

@@ -90,14 +90,14 @@ control formulation must carry explicitly~\cite{shen2026cdro}, never enters
 the commitment problem.
 \end{remark}
 
-The disturbance is
+The disturbance over an hour is
 \begin{equation}
-\xi_t = [w_t,\; \delta^{\mathrm{dew}}_t]^\top ,
+\xi = \bigl[w_{0:N-1},\; \delta^{\mathrm{dew}}\bigr] ,
 \end{equation}
-where $w_t$ is the residual of the IT heat load around its day-ahead forecast
-$\bar Q$, driven by bursty, non-Gaussian AI workload dynamics, and
-$\delta^{\mathrm{dew}}_t$ is the dew-point forecast error, which shifts the
-anti-condensation boundary. The day-ahead context vector
+where $w_t$ is the step residual of the IT heat load around its day-ahead
+forecast $\bar Q$, driven by bursty, non-Gaussian AI workload dynamics, and
+$\delta^{\mathrm{dew}}$ is the hour's dew-point forecast error, which shifts
+the anti-condensation boundary. The day-ahead context vector
 \begin{equation}
 c_h = \bigl[\Tdew^{\mathrm{fc}},\ \text{workload-forecast features}\bigr]
 \label{eq:context}
@@ -141,14 +141,17 @@ All nonlinearity is confined to the state-dependent input set
 \begin{equation}
 \mathcal{U}(x;c)=\Bigl\{u:
 \begin{aligned}
-&0 \le \uext \le \mdot c_p\bigl(\Tw-\vartheta(c)\bigr),\\
+&\ell(\Tw) \le \uext \le \mdot c_p\bigl(\Tw-\vartheta(c)\bigr),\\
 &\uext \le \mdot[f] c_p\bigl(\Tw-\Tf-\delta_{\mathrm{hx}}\bigr),\
 0 \le \urej \le \bar u^{\mathrm{rej}}
 \end{aligned}
 \Bigr\},
 \label{eq:Ux}
 \end{equation}
-which is \emph{affine} in $x$ for a fixed context. The first bound carries
+where $\mdot[f]$ is the facility-loop flow and
+$\ell(\Tw)=[\mdot_{\min} c_p(\Tw - T^{\mathrm{in}}_{\max})]_+$ is the forced
+extraction once the loop exceeds the supply-temperature ceiling; the set is
+\emph{affine} in $x$ for a fixed context. The upper extraction bound carries
 the model's signature constraint: the supply-temperature floor
 \begin{equation}
 \vartheta(c) = \max\bigl\{\vartheta_{\min},\ \Tdew^{\mathrm{fc}}
@@ -158,7 +161,11 @@ the model's signature constraint: the supply-temperature floor
 sits above the dew point to preclude condensation on server boards, so
 humidity directly truncates the admissible heat extraction. The second bound
 is the passive heat-exchanger coupling between the loops, and the third the
-chiller equipment limit. Sub-minute chip-level bursts are summarized by
+chiller equipment limit. We assume the hall-air dew point tracks the ambient
+dew point (outdoor-air-coupled halls without active dehumidification), with
+the margin $\delta_{\mathrm{c}}$ absorbing the residual gap; halls with
+tightly conditioned air would replace $\Tdew^{\mathrm{fc}}$ by an indoor
+humidity forecast without changing the structure. Sub-minute chip-level bursts are summarized by
 intra-interval peak statistics within $w_t$; hardware frequency scaling
 remains the ultimate backstop beyond all modeled uncertainty sets and appears
 nowhere else in the model.
@@ -189,7 +196,8 @@ $C_\mathrm{f}$ & $60$\,MJ/K & $\delta_{\mathrm{c}}$ & $2$\,K \\
 $h_{\mathrm{jw}}$ & $40$\,kW/K & $\vartheta_{\min}$ & $18^\circ$C \\
 $\mdot c_p$ & $54.6$\,kW/K & $\bar u^{\mathrm{rej}}$ & $1.3$\,MW \\
 $\delta_{\mathrm{hx}}$ & $2$\,K & $\uext$ ramp & $200$\,kW/min \\
-$\eta$ (ref.\ COP) & supply-sweep fit & $\Delta t$ / $\dH$ & $5$\,min / $1$\,h \\
+$\eta$ (ref.\ COP) & $3.8$ & $T_{\mathrm{thr}}$ & $70^\circ$C \\
+$\Delta t$ / $\dH$ & $5$\,min / $1$\,h & $\mdot_{\min}/\mdot$ & $0.3$ \\
 \bottomrule
 \end{tabular}
 \vspace{-3mm}
@@ -214,9 +222,10 @@ exogenous baseline $\Pbase$.
 For each hour $h$ the operator offers a pair $(q_h, d)$: \emph{if activated,
 reduce cooling power by up to $q_h$ below baseline, sustainable for up to $d$
 minutes within the hour}. The duration $d\in\{15,30,60\}$\,min is a product
-parameter fixed per market (we evaluate $d=30$); activation is exogenous with
-probability $p_{\mathrm{act}}$ and activated fraction $r_h\in[0,1]$,
-$r_h\cdot 60\le d$. The product is stylized: it maps loosely onto
+parameter fixed per market (we evaluate $d=30$); activation is an exogenous
+Bernoulli draw with probability $p_{\mathrm{act}}$ per committed hour, and an
+activated hour exercises the full window, $r_h = d/60$ (idle hours have
+$r_h=0$). The market interval is $\dH = 1$\,h. The product is stylized: it maps loosely onto
 short-duration reserve and emergency products without encoding any single
 tariff, and it is the only institutional element in the model; all other
 market realism enters through data. Hour $h$ settles on metered energy
@@ -224,15 +233,17 @@ against the baseline:
 \begin{equation}
 \begin{aligned}
 \text{revenue} &= \picap_h q_h \dH,\qquad
-s_h = \Bigl[r_h q_h \dH - \!\!\sum_{t\in h}(\Pbase-\Pcool_t)\Delta t\Bigr]_+,\\
+s_h = \Bigl[r_h q_h \dH - \!\!\sum_{t\in h}(\Pbase-\Pcool_t)\Delta t\Bigr]_+
+\!\wedge r_h q_h \dH,\\
 \text{penalty} &= \gamma\,\picap_h\, s_h,\qquad \gamma \ge 1,
 \end{aligned}
 \label{eq:settlement}
 \end{equation}
 plus real-time energy deviations at the spot price and a degradation cost
 $c_{\mathrm{deg}}\!\int[\Tj(t)-T_{\mathrm{thr}}]_+dt$ that prices sustained
-hotspot elevation. Whole-hour metering in \eqref{eq:settlement} is
-load-bearing: recovery \emph{within} the activated hour cancels delivered
+hotspot elevation above the wear threshold $T_{\mathrm{thr}}=70^\circ$C
+(shortfall is capped at the obligation, the $\wedge$ term). Whole-hour metering in \eqref{eq:settlement} drives the
+certification: recovery \emph{within} the activated hour cancels delivered
 energy, so certifying the activation window alone over-promises; the envelope
 of Section~\ref{sec:methodology} certifies both the window depth and the hour
 energy.
@@ -275,9 +286,9 @@ F(x,c) = \max\bigl\{q : (q,d)\ \text{deliverable from}\ x\ \text{in}\ c\bigr\}
 is the maximal committable depth. It shrinks with humidity through
 \eqref{eq:floor}, with workload volatility through the buffer that bursts
 consume, and with duration $d$; a fixed-margin commitment is therefore either
-unsafe or wasteful across contexts. This is the dilemma that motivates
-context-dependent robustness in the companion control
-problem~\cite{shen2026cdro}, transposed here to the market layer.
+unsafe or wasteful across contexts. Context-dependent robustness resolves the
+same dilemma in the companion control problem~\cite{shen2026cdro}; here it
+enters at the market layer.
 
 \vspace{-4mm}
 \subsection{Day-Ahead Offering Problem Under Uncertainty}

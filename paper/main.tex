@@ -68,7 +68,12 @@ Jiachen Shen,~\IEEEmembership{Student Member,~IEEE,}
 Jian Shi,~\IEEEmembership{Senior Member,~IEEE,}
 Chenye Wu,~\IEEEmembership{Senior Member,~IEEE,}\\
 Dan Wang,~\IEEEmembership{Senior Member,~IEEE,}
-and Zhu Han,~\IEEEmembership{Fellow,~IEEE}
+and Zhu Han,~\IEEEmembership{Fellow,~IEEE}%
+% %% OWNER-VERIFY: affiliations/funding before submission (mirrors companion paper)
+\thanks{J. Shen, J. Shi, and Z. Han are with the University of Houston,
+Houston, TX, USA. C. Wu is with the Chinese University of Hong Kong,
+Shenzhen, China. D. Wang is with the Hong Kong Polytechnic University,
+Hong Kong.}%
 \vspace{-10mm}%
 }
 
@@ -79,11 +84,12 @@ and Zhu Han,~\IEEEmembership{Fellow,~IEEE}
 % =====================================================================
 \begin{abstract}
 Liquid-cooled artificial intelligence (AI) data centers couple a large,
-controllable cooling load to megajoules of thermal mass, yet no existing
-scheme lets an operator \emph{commit} this flexibility in a day-ahead market:
-the deliverable depth moves with humidity, workload, and thermal state, and a
-commitment that cannot be honored becomes either a reliability penalty or a
-silicon-temperature excursion. In this paper, we propose ENCORE, an
+controllable cooling load to megajoules of thermal mass, yet existing
+demonstrations of this flexibility stop short of a day-ahead market
+commitment with a delivery guarantee: the deliverable depth moves with
+humidity, workload, and thermal state, and a commitment that cannot be
+honored becomes either a reliability penalty or a silicon-temperature
+excursion. We propose ENCORE, an
 envelope-certified offering method for grid-interactive liquid cooling.
 ENCORE characterizes the set of deliverable (offer, duration) pairs exactly as
 a context-dependent polyhedron under joint hotspot and anti-condensation
@@ -91,16 +97,19 @@ constraints, with a closed-form weather-coupled virtual-battery equivalent.
 Two nested context-conditional disturbance sets robustify the envelope
 offline: a safety set that is never traded for revenue, and a delivery set
 whose residual risk the settlement prices. A certified fallback policy then
-underwrites a deliberately simple real-time controller. We prove that any
+lets a simple real-time controller inherit both guarantees. We prove that any
 offer inside the tightened envelope satisfies thermal safety on the safety
-set and meets its settled energy obligation at confidence $1-\epsd$. A case
-study built entirely on measured data (a 2.0-million-worker GPU-cluster
+set and meets its settled energy obligation at a designer-chosen delivery
+confidence. A case study driven end-to-end by measured workload,
+weather-forecast, and price records (a 2.0-million-worker GPU-cluster
 trace, archived day-ahead weather forecasts, and ten 2024 ERCOT weeks)
 validates both clauses out of sample, with zero in-domain violation episodes
-across $1{,}400$ controller-days. Day-ahead workload information alone raises a real hall's
-certifiable offer from $40.7$ to $74.6$\,kW per MW of IT load, and the
-certified participant earns \$$97$/day per MW during a scarcity week with zero
-capital expenditure and zero impact on compute workloads.
+across ten held-out weeks replayed under $20$ activation draws. Day-ahead
+workload information alone raises the certifiable offer of a hall driven by
+the measured GPU-cluster workload from $40.7$ to $74.6$\,kW per MW of IT
+load, and the certified participant earns \$$97$/day per MW during a
+scarcity week with no added hardware and no workload impact within the
+certified domain.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -123,15 +132,16 @@ centers as a day-ahead offering problem and developed ENCORE, which certifies
 the deliverable (offer, duration) set as a context-dependent polyhedral
 envelope and offers from its robustified interior under nested
 safety/delivery disturbance sets. The certificate survives from commitment to
-real-time control: across ten measured ERCOT weeks, the certified participant
-incurred zero violation episodes within its stated domain while delivery
-failures remained inside the priced $\epsd$ budget, against $229$
-violation-days for the uncertified envelope. Day-ahead workload information
-raised the certifiable offer of a real GPU hall by $83\%$, and scarcity-week
-value reached \$$97$/day per MW of IT load with no added hardware. Cooling-side
-thermal inertia can therefore be sold, not merely demonstrated: certified
-envelopes make the loop a market resource while keeping hardware safety
-constraints intact.
+real-time control: across ten measured ERCOT weeks, the certified
+participant incurred zero violation episodes within its stated domain while
+delivery failures remained inside the priced $\epsd$ budget, against $229$
+violation day-seeds for the uncertified envelope. Day-ahead workload
+information raised the certifiable offer of a hall under a measured
+GPU-cluster workload by $83\%$, and scarcity-week value reached \$$97$/day
+per MW of IT load with no added hardware. Certified envelopes therefore turn
+cooling-side thermal inertia from a demonstrated potential into a market
+resource, with safety guaranteed on the certified domain and excursions
+beyond it bounded and small.
 
 % =====================================================================
 \bibliographystyle{IEEEtran}

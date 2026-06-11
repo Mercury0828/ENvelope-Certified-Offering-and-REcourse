@@ -21,8 +21,9 @@ production AI cluster's power by $25\%$ for three hours by orchestrating
 workloads~\cite{colangelo2025phoenix}, and workload-level studies report
 $18$--$55\%$ power flexibility across AI job types~\cite{acun2026flexibility}.
 
-This paper develops the complementary, untapped resource: the \emph{cooling
-side} of the liquid-cooled AI facility. Direct-to-chip liquid cooling
+This paper develops the complementary resource: the \emph{cooling side} of
+the liquid-cooled AI facility, field-demonstrated for over a decade but
+never committed as a certified market product. Direct-to-chip liquid cooling
 concentrates a substantial, controllable share of facility power in a
 chilled-water plant coupled to megajoules of coolant and facility-water
 thermal mass. Measurements on a production liquid-cooled hall show that
@@ -48,10 +49,11 @@ buffer the product sells; and the depth that can be \emph{sustained} decays
 with the product duration. A deterministic maximum commitment invites
 delivery failures and hotspot excursions, while a static worst-case
 commitment forfeits most of the value. For variable generation and
-distributed resources, the analogous problem is resolved by the do-not-exceed
-limit~\cite{zhao2015variable} and the dynamic operating
-envelope~\cite{aemo2022doe}; no counterpart exists for a thermal resource
-whose limits move with the weather.
+distributed energy resources (DERs), the analogous problem is resolved by
+the do-not-exceed (DNE) limit~\cite{zhao2015variable} and the dynamic
+operating envelope~\cite{aemo2022doe}, and the buildings literature
+certifies reserves against a static comfort band; none covers a feasible
+set whose lower boundary is an exogenous stochastic weather variable.
 
 \textit{2) A day-ahead commitment must survive real-time uncertainty with
 unequal stakes.} Between commitment and delivery, the realized workload and
@@ -60,10 +62,8 @@ kind: a delivery shortfall is a \emph{priced} event settled by penalties,
 whereas a hotspot or condensation excursion is a hardware-safety event that no
 payment compensates. A single robustness level cannot serve both: tightening
 until safety holds in the worst case destroys the offer, while sizing
-uncertainty for the average case lets safety erode exactly when the product is
-exercised. The commitment therefore needs \emph{two} guarantees with two
-different confidence levels, and a real-time layer simple enough to run on
-facility control hardware that nevertheless inherits them.
+uncertainty for the average case lets safety erode exactly when the product
+is exercised.
 
 \begin{table*}[t]
 \centering
@@ -166,8 +166,8 @@ adding hardware, whereas here the unmodified loop itself is the resource.
 
 \textit{2) Buildings-to-grid reserve provision.} The methodological template
 for offering thermal flexibility under uncertainty comes from commercial
-buildings: robust capacity allocation ahead of time, an online MPC layer, and
-experimental market
+buildings: robust capacity allocation ahead of time, an online model
+predictive control (MPC) layer, and experimental market
 demonstrations~\cite{vrettos2016scheduling,vrettos2016robust,gorecki2017experimental}.
 ENCORE descends from this line and departs where the resource does: (i) the
 feasible set's lower boundary is coupled to an exogenous stochastic variable
@@ -198,12 +198,9 @@ positioning.
 \subsection{Our Contributions}
 \label{subsec:contributions}
 
-Our goal is to let a liquid-cooled AI data center sell its cooling-side
-thermal inertia in a day-ahead market with guarantees that survive to
-real-time delivery. A deterministic offer is unsafe and a static worst-case
-offer is worthless, so the offer must come from a context-dependent envelope
-robustified at two confidence levels with different stakes. The main
-contributions are as follows.
+ENCORE lets a liquid-cooled AI data center sell its cooling-side thermal
+inertia in a day-ahead market with guarantees that survive to real-time
+delivery. The main contributions are as follows.
 
 \begin{itemize}
 \item We formulate cooling-side flexibility as a day-ahead offering problem
@@ -224,19 +221,21 @@ be spaced.
 Nested context-conditional disturbance sets tighten the envelope offline
 through exact tube margins: a safety set, never traded for revenue, and a
 delivery set whose level is a product design variable priced by the
-settlement. A certified fallback policy underwrites the real-time layer. We prove that any
+settlement. A certified fallback policy transfers both guarantees to the
+real-time layer. We prove that any
 offer inside the tightened envelope satisfies thermal safety on the safety
 set and meets its settled obligation at confidence $1-\epsd$, with expected
 penalties bounded.
 
-\item We validate the certificate end-to-end on measured data only: a
+\item We validate the certificate end-to-end on measured records: a
 2.0-million-worker GPU-cluster trace with a causal job-aware day-ahead
-forecast, archived numerical-weather-prediction dew-point forecasts, and ten
-2024 ERCOT weeks. Across $1{,}400$ controller-days the certified participant
-incurs zero in-domain violation episodes (against $229$ violation-days for
-the uncertified envelope), delivery failures stay inside the priced budget,
-and day-ahead workload information alone raises a real hall's certifiable
-offer by $83\%$.
+forecast, archived numerical-weather-prediction (NWP) dew-point forecasts,
+and ten 2024 weeks of prices from the Electric Reliability Council of Texas
+(ERCOT). Across ten held-out weeks $\times$ $20$ activation draws the
+certified participant incurs zero in-domain violation episodes (against
+$229$ violation day-seeds for the uncertified envelope), delivery failures
+stay inside the priced budget, and day-ahead workload information alone
+raises the certifiable offer by $83\%$.
 \end{itemize}
 
 The remainder of this paper is organized as follows.
