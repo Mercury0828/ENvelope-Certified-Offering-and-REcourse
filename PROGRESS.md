@@ -55,8 +55,21 @@ phase3:
     proto_F1: context-free certification EMPTY everywhere; conditional certifies 44.6/20.6 kW (dry bins, ready state); humid bins uncertifiable at d=30 eps=0.1 (synthetic process)
   caveat: numbers are synthetic-process-dependent; refit on real data when it lands
 phase4:
+  status: complete            # acceptance pass on two real days; SELF_AUDIT written
+  completed_steps:
+    - data_loaders            # ERCOT DAM/RTM/ECRS + KIAH day loaders
+    - baseline_generator      # frozen, flat under frozen COP (D-035)
+    - settlement              # 5.3 exact, activated-hours-only shortfall (D-040)
+    - offering                # per-hour separable D-1 (D-036/D-037), B2/B3/B4 envelopes
+    - day_simulator           # 24-h continuity, idle track-to-ready law (D-039)
+    - two_day_experiment      # 2023-08-17 humid + 2024-01-16 dry (Heather)
+  key_results:
+    dry_day: B4 +$189/day vs B1, 0 penalty/violations; B2 +$653 but T_j 87.1 C + shortfall
+    humid_day: B4 sits out (phase-3 finding holds end-to-end); B2 T_j 89.0 C
+    negative_result: ready-box terminal collapses F-tilde to 0 (D-041) -> readiness SET wiring is Phase-5 work
+phase5:
   status: not_started
-  next_step: D-1 offering layer (6.6) + baseline generator + settlement simulator; embed 3-state lifted envelope as constraints; auto-continue applies (no gate)
+  next_step: B5/B6 baselines, readiness-polygon terminal wiring, trace-residual W(c) refit + alignment, 3 representative weeks, 20+ seeds smoke
 remote: https://github.com/Mercury0828/ENvelope-Certified-Offering-and-REcourse (main; push at milestones)
 skill_js: lessons pushed (29c93a4)
 owner_todo:
@@ -91,3 +104,12 @@ owner_todo:
   failure 0%/3.6% ≤ ε=10%, corner + beyond-box injections behave. Proto-F1: context-free
   certification empty everywhere; conditional certifies 44.6/20.6 kW (dry), humid bins
   flagged no-offer (synthetic-process-dependent; R2-honesty). Phase 4 next (no gate).
+- **2026-06-10** Real data acquired (D-034): ERCOT DAM/RTM/ECRS 2023-24 (HB_HOUSTON),
+  KIAH hourly weather, Google Borg 2019 trace shards → 1 MW hall profile.
+- **2026-06-10** Phase 4 complete. Market layer (baseline/settlement/offering/dayrun)
+  + two real-day end-to-end runs (humid Aug day; Winter Storm Heather dry day with
+  ECRS at $1,000–1,500/MWh). Exact ledger reconciliation asserted; offers inside
+  envelopes by construction. B4: +$189/day market value with zero violations on the
+  dry day, sits out the humid day; B2 buys profit with T_j violations on both days.
+  D-035..D-041 logged (incl. the settlement edge case and the terminal-box negative
+  result). Phase 5 next (no gate).

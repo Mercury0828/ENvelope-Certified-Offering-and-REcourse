@@ -1,0 +1,126 @@
+[
+  {
+    "date": "2023-08-17",
+    "activated_hours": [
+      0,
+      10,
+      14
+    ],
+    "ledger": {
+      "B1": {
+        "revenue_usd": 0.0,
+        "rt_cost_usd": 6291.645098350948,
+        "penalty_usd": 0.0,
+        "degradation_usd": 12.44849717619639,
+        "profit_usd": -6304.093595527144,
+        "shortfall_kWh_total": 0.0,
+        "delivered_ok_hours": 24.0,
+        "deg_Kh": 6.224248588098195,
+        "gamma_mult": 2.0,
+        "c_deg_per_Kh": 2.0,
+        "T_thr": 70.0
+      },
+      "B2": {
+        "revenue_usd": 1062.6207422915606,
+        "rt_cost_usd": 6196.673973457602,
+        "penalty_usd": 0.0,
+        "degradation_usd": 23.388052724661765,
+        "profit_usd": -5157.441283890704,
+        "shortfall_kWh_total": 0.0,
+        "delivered_ok_hours": 24.0,
+        "deg_Kh": 11.694026362330883,
+        "gamma_mult": 2.0,
+        "c_deg_per_Kh": 2.0,
+        "T_thr": 70.0
+      },
+      "B3": {
+        "revenue_usd": 113.10408047082097,
+        "rt_cost_usd": 6240.143060280379,
+        "penalty_usd": 0.0,
+        "degradation_usd": 16.914835996719304,
+        "profit_usd": -6143.953815806278,
+        "shortfall_kWh_total": 0.0,
+        "delivered_ok_hours": 24.0,
+        "deg_Kh": 8.457417998359652,
+        "gamma_mult": 2.0,
+        "c_deg_per_Kh": 2.0,
+        "T_thr": 70.0
+      },
+      "B4": {
+        "revenue_usd": 0.0,
+        "rt_cost_usd": 6291.645098350948,
+        "penalty_usd": 0.0,
+        "degradation_usd": 12.44849717619639,
+        "profit_usd": -6304.093595527144,
+        "shortfall_kWh_total": 0.0,
+        "delivered_ok_hours": 24.0,
+        "deg_Kh": 6.224248588098195,
+        "gamma_mult": 2.0,
+        "c_deg_per_Kh": 2.0,
+        "T_thr": 70.0
+      }
+    }
+  },
+  {
+    "date": "2024-01-16",
+    "activated_hours": [
+      5,
+      14,
+      20
+    ],
+    "ledger": {
+      "B1": {
+        "revenue_usd": 0.0,
+        "rt_cost_usd": 982.5560762866794,
+        "penalty_usd": 0.0,
+        "degradation_usd": 0.0,
+        "profit_usd": -982.5560762866794,
+        "shortfall_kWh_total": 0.0,
+        "delivered_ok_hours": 24.0,
+        "deg_Kh": 0.0,
+        "gamma_mult": 2.0,
+        "c_deg_per_Kh": 2.0,
+        "T_thr": 70.0
+      },
+      "B2": {
+        "revenue_usd": 658.2196939440961,
+        "rt_cost_usd": 967.8367659921968,
+        "penalty_usd": 0.9269157553287141,
+        "degradation_usd": 19.078524573386915,
+        "profit_usd": -329.6225123768163,
+        "shortfall_kWh_total": 1.8538315106574281,
+        "delivered_ok_hours": 23.0,
+        "deg_Kh": 9.539262286693457,
+        "gamma_mult": 2.0,
+        "c_deg_per_Kh": 2.0,
+        "T_thr": 70.0
+      },
+      "B3": {
+        "revenue_usd": 217.28537783757596,
+        "rt_cost_usd": 975.6156797427531,
+        "penalty_usd": 0.0,
+        "degradation_usd": 6.88842006239701,
+        "profit_usd": -765.2187219675741,
+        "shortfall_kWh_total": 0.0,
+        "delivered_ok_hours": 24.0,
+        "deg_Kh": 3.444210031198505,
+        "gamma_mult": 2.0,
+        "c_deg_per_Kh": 2.0,
+        "T_thr": 70.0
+      },
+      "B4": {
+        "revenue_usd": 187.28681740607408,
+        "rt_cost_usd": 975.2586208256432,
+        "penalty_usd": 0.0,
+        "degradation_usd": 5.525434423380174,
+        "profit_usd": -793.4972378429493,
+        "shortfall_kWh_total": 0.0,
+        "delivered_ok_hours": 24.0,
+        "deg_Kh": 2.762717211690087,
+        "gamma_mult": 2.0,
+        "c_deg_per_Kh": 2.0,
+        "T_thr": 70.0
+      }
+    }
+  }
+]

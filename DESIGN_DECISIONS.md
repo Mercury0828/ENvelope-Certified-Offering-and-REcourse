@@ -370,3 +370,65 @@ per-window SUM estimates the fleet profile shape (~280 rows/window, ~6% noise).
 Processed to a 1 MW hall 5-min mean/peak series with affine power map (idle 0.3 [est]).
 Caveats logged in data/README.md: peak series is a non-simultaneity upper bound
 (concurrency adjustment parked for Phase 5); trace clock is not wall-aligned to prices.
+
+## 2026-06-10 — D-035: Baseline P̄^cool,0 is flat under the frozen-COP surrogate
+
+**Decision.** Under D-006's frozen COP, total daily cooling energy is schedule-invariant
+(every joule extracted at the same COP), so the no-market optimum — and hence the
+guide-5.4 exogenous baseline — is the nominal steady state: P̄_t ≡ P_base. B1 and the
+baseline generator coincide by construction. Becomes a real optimization when the
+COP(T_in) refinement is promoted (PARKING_LOT).
+
+## 2026-06-10 — D-036: RT-energy term in the D-1 objective = energy-neutral shift
+
+**Decision.** Stored event heat is re-extracted during recovery at the same COP, so the
+expected RT-cost effect of offering q_h is E[r_h]·q_h·ΔH·(π_rt,recovery − π_rt,event),
+with recovery priced at the next hour's mean RTM. Linear in q, sign-correct (events on
+price peaks are profitable twice).
+
+## 2026-06-10 — D-037: Degradation term and offer optimization form
+
+**Decision.** Degradation cost per activated hour = c_deg·∫[T_j − T_thr]_+ dt evaluated
+on the certified nominal plan at candidate q (exact for the plan; trajectories are LP
+outputs). T_thr = 70 °C [est], c_deg = 2 $/K·h [est] (C3(iii) sweeps it later). The V1
+offering is per-hour separable (plant re-enters ready state between hours; holding is
+free under frozen COP), solved by grid search over [0, F̃_h] — an LP is unnecessary
+until cross-hour coupling (pre-cool scheduling with real holding costs) arrives.
+
+## 2026-06-10 — D-038: Activation and scenario model (V1)
+
+**Decision.** Activation exogenous per guide 5.2: r_h Bernoulli(p_act = 0.15 [est]) with
+r = d/60 when called; B3's SAA envelope uses the elementwise max over 20 sampled
+scenario records (no probabilistic guarantee — that is B3's defining property);
+B2 uses the deterministic envelope; B4 the conformal-certified F̃.
+
+## 2026-06-10 — D-039: Inter-hour operation
+
+**Decision.** Idle (non-activated) hours run a track-to-ready feedback law
+u = Q_IT + K(x − x_ready); activated hours run the committed plan via fallback or
+tube-margin MPC. State carries hour to hour; all controllers face common random
+numbers. Settlement applies only to activated hours (D-040).
+
+## 2026-06-10 — D-040: Settlement shortfall only for activated obligations
+
+**Question.** Guide 5.3's s_h = [r_h q_h ΔH − Σ(P̄−P)Δt]_+ literally yields positive
+shortfall for hours with NO obligation whenever realized cooling power exceeds baseline
+(bursts), charging penalties to idle plants (B1 was fined $52 for not offering).
+
+**Decision.** s_h is computed only when r_h·q_h > 0; hours without an activated
+obligation settle nothing. This is the evident intent of 5.3 (shortfall against an
+obligation), logged because it is a formula edge-case the paper text should state.
+
+## 2026-06-10 — D-041: No terminal constraint in V1 committed plans (negative result kept)
+
+**Question.** Consecutive activations can start events from warm states (2-3
+"infeasible starts"/day at p_act = 0.15), where the realized state cannot run the
+committed plan and the simulator falls back to the D-1 plan with feedback absorbing
+the gap (observed: zero violations, zero shortfall for B4).
+
+**Decision.** Tried terminal = ready-state box: it over-tightens to F̃ ≡ 0 everywhere —
+a naive return-to-start terminal KILLS the product, demonstrating exactly why guide 6.3
+defines readiness as a SET (Phase-2's R(q) is far larger than the ready box). V1 ships
+without terminal constraints + explicit infeasible-start fallback and counting; wiring
+the true readiness polygon into committed plans is Phase-5 work. The negative result is
+paper-worthy (ad-hoc terminal penalties vs readiness sets).
