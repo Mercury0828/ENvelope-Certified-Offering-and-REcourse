@@ -156,8 +156,8 @@ def main():
     ax1.axvline(1.0, color="C3", lw=1, ls=":")
     ax1.annotate("Borg-2019 cell-a\n(mixed batch)", xy=(0.97, 0.65), fontsize=7.5,
                  ha="right", color="C3", xycoords=("data", "axes fraction"))
-    ax1.set_xlabel("residual workload volatility (× Borg-2019 cell-a)")
-    ax1.set_ylabel("max certifiable S2 offer [kW per MW IT]")
+    ax1.set_xlabel("residual workload volatility κ (× Borg-2019)")
+    ax1.set_ylabel("max certifiable offer [kW per MW IT]")
     ax1.set_title(f"(a) the certification wall (dry day, T_dew = {T_DEW_A:.0f} °C, "
                   f"ε = {EPS})")
     ax1.legend(fontsize=7.5)
@@ -170,11 +170,8 @@ def main():
     ax2.plot(dfb.T_dew, dfb.Ft30_uniform_kW, color="C3", lw=2.0,
              label="F̃ context-free, d = 30")
     ax2.set_xlabel("day-ahead NWP dew-point forecast $T_{dew}$ [°C]")
-    ax2.set_title("(b) weather coupling (Alibaba PAI hall)")
+    ax2.set_title("(b) weather coupling (PAI-workload hall)")
     ax2.legend(fontsize=7.5)
-    fig.suptitle("F1 — certified S2 envelope vs workload volatility, duration, weather "
-                 "and information (held-out fit, causal forecast, real NWP dew, "
-                 "e₀-covered tube)", y=1.02)
     fig.tight_layout()
     savefig(fig, OUT / "F1_context")
     plt.close(fig)

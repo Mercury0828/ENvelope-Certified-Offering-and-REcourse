@@ -57,10 +57,9 @@ We consider the thermal path of a hall with $1$\,MW of IT load served by
 direct-to-chip liquid cooling, as depicted in Fig.~\ref{fig:phys_arch}: GPU
 cold plates reject heat into a coolant loop, a coolant distribution unit
 passes it to a facility-water loop, and a chiller plant rejects it to ambient.
-The system is viewed from two sides. Thermally, the hall must keep the
-silicon-adjacent hotspot and the loop temperatures within limits;
-electrically, the chiller plant is a controllable load whose temporary
-reduction is the product being sold.
+Thermally, the hall must keep the silicon-adjacent hotspot and the loop
+temperatures within limits; electrically, the chiller plant is a
+controllable load whose temporary reduction is the product being sold.
 
 The thermal state at control step $t$ is
 \begin{equation}
@@ -82,12 +81,11 @@ below.
 \begin{remark}[Realization layer]\label{rem:realization}
 A commanded extraction rate $\uext$ is realized by the supply-temperature
 setpoint $T^{\mathrm{in}} = \Tw - \uext/(\mdot c_p)$ at the operating flow,
-and a rejection rate $\urej$ by the chiller load setpoint. The input set
-\eqref{eq:Ux} is exactly the image of the physical actuator ranges under this
-map, so every virtual command certified below corresponds to an admissible
-setpoint pair; bilinear flow--temperature coupling, which the companion
-control formulation must carry explicitly~\cite{shen2026cdro}, never enters
-the commitment problem.
+and a rejection rate $\urej$ by the chiller load setpoint. The set
+\eqref{eq:Ux} is the image of the physical actuator ranges under this map,
+so every certified virtual command corresponds to an admissible setpoint
+pair; the actuators' bilinear flow--temperature coupling never enters the
+commitment problem (cf.~\cite{shen2026cdro}).
 \end{remark}
 
 The disturbance over an hour is
@@ -233,16 +231,18 @@ against the baseline:
 \begin{equation}
 \begin{aligned}
 \text{revenue} &= \picap_h q_h \dH,\qquad
-s_h = \Bigl[r_h q_h \dH - \!\!\sum_{t\in h}(\Pbase-\Pcool_t)\Delta t\Bigr]_+
-\!\wedge r_h q_h \dH,\\
-\text{penalty} &= \gamma\,\picap_h\, s_h,\qquad \gamma \ge 1,
+\text{penalty} = \gamma\,\picap_h\, s_h,\quad \gamma \ge 1,\\
+s_h &= \Bigl[r_h q_h \dH -
+\textstyle\sum_{t\in h}(\Pbase-\Pcool_t)\Delta t\Bigr]_+
+\!\wedge\, r_h q_h \dH,
 \end{aligned}
 \label{eq:settlement}
 \end{equation}
-plus real-time energy deviations at the spot price and a degradation cost
-$c_{\mathrm{deg}}\!\int[\Tj(t)-T_{\mathrm{thr}}]_+dt$ that prices sustained
-hotspot elevation above the wear threshold $T_{\mathrm{thr}}=70^\circ$C
-(shortfall is capped at the obligation, the $\wedge$ term). Whole-hour metering in \eqref{eq:settlement} drives the
+where the $\wedge$ term caps the shortfall at the obligation; the hour
+additionally settles real-time energy deviations at the spot price and a
+degradation cost $c_{\mathrm{deg}}\!\int[\Tj(t)-T_{\mathrm{thr}}]_+dt$ that
+prices sustained hotspot elevation above the wear threshold
+$T_{\mathrm{thr}}=70^\circ$C. Whole-hour metering in \eqref{eq:settlement} drives the
 certification: recovery \emph{within} the activated hour cancels delivered
 energy, so certifying the activation window alone over-promises; the envelope
 of Section~\ref{sec:methodology} certifies both the window depth and the hour
@@ -311,12 +311,12 @@ stochastic offering problem is
 \end{equation}
 where $C^{\mathrm{rt}}_h$ and $D_h$ are the real-time energy and degradation
 costs and $\mathbb{P}^*$ is the unknown joint law of workload and dew-point
-residuals. The problem is difficult for three reasons: $\mathbb{P}^*$ is
-unknown, nonstationary, and context-dependent; the safety constraints C1--C3
-admit no monetary compensation, while shortfalls $s_h$ are merely priced, so
-the two uncertainty consequences carry different stakes; and the commitment
-is made hours before delivery, so all robustness must be decided from the
-context alone. Section~\ref{sec:methodology} resolves this with a certified
-envelope robustified at two nested confidence levels.
+residuals. Three features make the problem hard: $\mathbb{P}^*$ is unknown,
+nonstationary, and context-dependent; safety (C1--C3) admits no monetary
+compensation while shortfalls are merely priced, so the two consequences
+carry different stakes; and the commitment precedes delivery by hours, so
+all robustness must be decided from the context alone.
+Section~\ref{sec:methodology} resolves this with a certified envelope
+robustified at two nested confidence levels.
 
 \vspace{-2mm}

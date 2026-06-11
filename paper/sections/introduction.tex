@@ -11,11 +11,10 @@ Artificial intelligence (AI) data centers are becoming large, fast-growing,
 and increasingly grid-relevant electricity loads, and power systems have begun
 to demand flexibility in return for interconnection. Texas Senate Bill~6
 subjects large loads to curtailment-readiness requirements~\cite{sb6_2025},
-hyperscalers have signed demand-response agreements covering on the order of a
-gigawatt of data-center load~\cite{google_dr2025}, and a recent assessment
-finds that modest flexibility from large new loads would unlock
-interconnection capacity for tens of gigawatts in existing U.S.
-systems~\cite{norris2025rethinking}. The supply side of this bargain is
+hyperscalers have signed demand-response agreements covering on the order of
+a gigawatt of data-center load~\cite{google_dr2025}, and modest flexibility
+from large new loads would unlock tens of gigawatts of interconnection
+capacity in existing U.S. systems~\cite{norris2025rethinking}. The supply side of this bargain is
 forming on the \emph{compute} side: a field demonstration in Phoenix reduced a
 production AI cluster's power by $25\%$ for three hours by orchestrating
 workloads~\cite{colangelo2025phoenix}, and workload-level studies report
@@ -169,12 +168,12 @@ for offering thermal flexibility under uncertainty comes from commercial
 buildings: robust capacity allocation ahead of time, an online model
 predictive control (MPC) layer, and experimental market
 demonstrations~\cite{vrettos2016scheduling,vrettos2016robust,gorecki2017experimental}.
-ENCORE descends from this line and departs where the resource does: (i) the
-feasible set's lower boundary is coupled to an exogenous stochastic variable
-(the dew point) rather than a static comfort band; (ii) the dynamics are
-minutes-scale loop physics against seconds-scale GPU heat bursts rather than
-hours-scale building mass; and (iii) the deliverable is the certified envelope
-object itself rather than a reserve schedule.
+ENCORE descends from this line and departs where the resource does: the
+feasible set's lower boundary is an exogenous stochastic variable (the dew
+point) rather than a static comfort band, the dynamics are minutes-scale
+loop physics against seconds-scale GPU bursts rather than hours-scale
+building mass, and the deliverable is the certified envelope object itself
+rather than a reserve schedule.
 
 \textit{3) Certifying the maximum offer.} Do-not-exceed limits for variable
 resources~\cite{zhao2015variable}, dynamic operating envelopes for
@@ -213,9 +212,8 @@ under joint workload and dew-point uncertainty.
 a context-dependent polyhedron, the certified flexibility envelope, and
 derive a closed-form weather-coupled virtual-battery equivalent whose
 capacity, power limits, and leakage are functions of the dew-point forecast.
-We further show a structural property of energy-settled thermal products:
-consecutive full-depth delivery is infeasible, so certified commitments must
-be spaced.
+We further show that consecutive full-depth delivery is infeasible under
+whole-hour energy settlement, so certified commitments must be spaced.
 
 \item We develop a two-stage offering method with end-to-end guarantees.
 Nested context-conditional disturbance sets tighten the envelope offline
@@ -238,9 +236,7 @@ stay inside the priced budget, and day-ahead workload information alone
 raises the certifiable offer by $83\%$.
 \end{itemize}
 
-The remainder of this paper is organized as follows.
-Section~\ref{sec:problem_formulation} presents the system model and the
-offering problem. Section~\ref{sec:methodology} develops the certified
-envelope, the nested robustification, and the guarantees.
-Section~\ref{sec:experimental_evaluation} gives the experimental setup and
-results. Section~\ref{sec:conclusion} concludes.
+Section~\ref{sec:problem_formulation} models the hall and the offering
+problem; Section~\ref{sec:methodology} develops ENCORE and its guarantees;
+Section~\ref{sec:experimental_evaluation} evaluates;
+Section~\ref{sec:conclusion} concludes.

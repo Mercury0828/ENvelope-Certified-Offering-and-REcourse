@@ -89,7 +89,8 @@ they differ only in the envelope they trust.
 \caption{Closed-loop market performance over ten 2024 ERCOT weeks $\times$
 $20$ seeds ($1{,}400$ day-seeds per participant, per MW of IT load). MV:
 market value relative to Idle. Delivery ratio: delivered over required
-energy. Violations: hotspot day-seeds (maximum excursion, K). Bold marks
+energy. Violations: hotspot day-seeds (maximum excursion, K); in-domain:
+realized disturbance in $\Wsafe(c)$ (\S\ref{subsec:cert}). Bold marks
 the proposed certified participant.}
 \label{tab:summary}
 \setlength{\tabcolsep}{4pt}
@@ -173,7 +174,7 @@ NWP dew-point forecast.}
 \subsection{Ten-Week Closed-Loop Market Results}
 \label{subsec:market}
 
-Table~\ref{tab:summary} aggregates $1{,}400$ controller-days per participant.
+Table~\ref{tab:summary} aggregates $1{,}400$ day-seeds per participant.
 Three observations order the comparison.
 
 \emph{1) Safety is the product.} The deterministic envelope monetizes the
@@ -273,20 +274,21 @@ $\times$ $20$ seeds; safety set fixed at $\epss=0.05$).}
 \label{tab:frontier}
 \setlength{\tabcolsep}{4pt}
 \scriptsize
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{lcc}
 \toprule
- & $\epsd=0.1$ & $\epsd=0.3$ (design) \\
+ & $\epsd{=}0.1$ & $\epsd{=}0.3$ (design) \\
 \midrule
-Market value (\$/day per MW) & $9.1$ & $10.6$ \\
+Market value (\$/day/MW) & $9.1$ & $10.6$ \\
 Committed (kW/day) & $43$ & $54$ \\
 Obligations / failures & $118$ / $15$ & $122$ / $24$ \\
-Observed failure rate (budget) & $0.127$ ($0.1$)$^{*}$ & $0.197$ ($0.3$) \\
-Cold-start failures (CP$_{95}$ bound) & $0$ ($\le 0.137$) & $0$ ($\le 0.154$) \\
+Failure rate (budget) & $0.127$ ($0.1$)$^{*}$ & $0.197$ ($0.3$) \\
+Cold-start fail.\ (CP$_{95}$) & $0$ ($\le 0.137$) & $0$ ($\le 0.154$) \\
 In-domain safety episodes & $0$ & $0$ \\
-Beyond-domain episode max (K) & $1.82$ & $1.57$ \\
+Beyond-domain max (K) & $1.82$ & $1.57$ \\
 \bottomrule
-\multicolumn{3}{l}{\footnotesize $^{*}$Consistent with the $0.1$ budget at
-$95\%$ confidence ($15$ of $118$; CP interval $[0.073, 0.201]$).}
+\multicolumn{3}{@{}l}{\footnotesize $^{*}$$15$/$118$, CP
+$[0.073, 0.201]$: consistent with $0.1$ at $95\%$ confidence.}
 \end{tabular}
 \vspace{-3mm}
 \end{table}
@@ -337,8 +339,9 @@ frozen-efficiency surrogate and a fixed wet bulb on both the commitment and
 validation sides; a weather-coupled efficiency model changes the energy
 accounting symmetrically across B2--B4 and, with priced pre-cool holding,
 is the main modeling extension left open. (iv) Beyond the calibrated safety
-set, hardware frequency scaling is the backstop; the measured excursions
-there stay below $1.9$\,K across both design points. (v) Certified depth
+set, hardware frequency scaling is the backstop; on the held-out replay the
+measured excursions there stay below $1.9$\,K across both design points
+(the adversarial stress days of \S\ref{subsec:cert} reach $2.2$\,K). (v) Certified depth
 scales close to linearly in the loop thermal inventories
 ($C_\mathrm{w}{+}C_\mathrm{f}$, engineering estimates), as \eqref{eq:vb}
 makes explicit.

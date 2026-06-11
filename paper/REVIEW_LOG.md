@@ -33,3 +33,21 @@ D style (13, APPLIED), E fresh-reader/TPC (28). Owner delegated approval
 
 Build after every file batch; bibtex rerun; pages kept in [10, 10.5].
 Final fresh-reader verification pass run on the revised PDF (see end of file).
+
+## Final fresh-reader verification (clean context, post-revision)
+
+8 issues found, all fixed: frontier table 61.7pt overflow (recomposed);
+settlement equation 44.6pt overflow (re-aligned; eq:box likewise); F1/F2 result
+figures printed internal pipeline titles with undefined jargon (S2,
+jobaware_eps03) — figures regenerated paper-clean from committed artifacts;
+"controller-days" -> "day-seeds" (one echo); duplicate R(q) definition removed;
+1.9 K claim scoped to the held-out replay (stress days reach 2.2 K); shortfall-cap
+parenthetical moved next to s_h; Table II caption now defines "in-domain".
+Verifier confirmed CLEAN: all number echoes (40+ items), LaTeX integrity (0
+undefined refs/citations), no printing placeholders, theorem apparatus
+consistent after demotions, Algorithm 1 self-contained, terminology consistent.
+
+Final state: 10.0 pages, 29 references, 2 negligible overfull boxes (3.0pt,
+1.5pt), compiles clean with bibtex. Owner inputs outstanding: 6 bibliography
+entries marked %% OWNER-VERIFY in refs.bib (slide-sourced titles/volumes) and
+the affiliation/funding block in main.tex.
