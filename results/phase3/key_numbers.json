@@ -1,0 +1,105 @@
+{
+  "eps": 0.1,
+  "gain_authority_kW_per_K": 10.0,
+  "dry-calm_beyond_box": {
+    "switched": true,
+    "T_viol_K": 0.0,
+    "delivery_ratio": 0.7359358823708376
+  },
+  "dry-bursty_beyond_box": {
+    "switched": true,
+    "T_viol_K": 0.0,
+    "delivery_ratio": 0.24869719543555682
+  },
+  "n_certifiable_bins": 2,
+  "coverage": [
+    {
+      "bin": "dry-calm",
+      "cov_conditional": 0.9405,
+      "cov_pooled": 0.9945,
+      "cov_uniform": 0.998,
+      "w_Q_kW": 238.18903768745687,
+      "E_MJ": 115.97083927537756,
+      "w_D_K": 0.8184823432239104
+    },
+    {
+      "bin": "dry-bursty",
+      "cov_conditional": 0.882,
+      "cov_pooled": 0.8755,
+      "cov_uniform": 0.961,
+      "w_Q_kW": 262.35685421735707,
+      "E_MJ": 227.91488320624674,
+      "w_D_K": 1.0439357340623792
+    },
+    {
+      "bin": "humid-calm",
+      "cov_conditional": 0.952,
+      "cov_pooled": 0.947,
+      "cov_uniform": 0.989,
+      "w_Q_kW": 247.1897890921381,
+      "E_MJ": 135.2382208768691,
+      "w_D_K": 2.435058688120732
+    },
+    {
+      "bin": "humid-bursty",
+      "cov_conditional": 0.916,
+      "cov_pooled": 0.845,
+      "cov_uniform": 0.9395,
+      "w_Q_kW": 267.05366348927225,
+      "E_MJ": 238.55771024015763,
+      "w_D_K": 2.711839725537819
+    }
+  ],
+  "envelopes_kW": [
+    {
+      "bin": "dry-calm",
+      "F_nom_kW": 66.05621676901693,
+      "F_ready_kW": 92.67406130489621,
+      "Ft_cond_nom_kW": 18.006160007492305,
+      "Ft_cond_ready_kW": 44.62400494494168,
+      "Ft_cond05_ready_kW": 41.66146901017359,
+      "Ft_uniform_ready_kW": -Infinity,
+      "Ft_pooled_ready_kW": 25.74698157933732
+    },
+    {
+      "bin": "dry-bursty",
+      "F_nom_kW": 66.05621676901693,
+      "F_ready_kW": 92.67406130489621,
+      "Ft_cond_nom_kW": -Infinity,
+      "Ft_cond_ready_kW": 20.57620364617968,
+      "Ft_cond05_ready_kW": -Infinity,
+      "Ft_uniform_ready_kW": -Infinity,
+      "Ft_pooled_ready_kW": 25.74698157933732
+    },
+    {
+      "bin": "humid-calm",
+      "F_nom_kW": 66.05621619621625,
+      "F_ready_kW": 69.85876557381704,
+      "Ft_cond_nom_kW": -Infinity,
+      "Ft_cond_ready_kW": -Infinity,
+      "Ft_cond05_ready_kW": -Infinity,
+      "Ft_uniform_ready_kW": -Infinity,
+      "Ft_pooled_ready_kW": -Infinity
+    },
+    {
+      "bin": "humid-bursty",
+      "F_nom_kW": 66.05621619621625,
+      "F_ready_kW": 69.85876557381704,
+      "Ft_cond_nom_kW": -Infinity,
+      "Ft_cond_ready_kW": -Infinity,
+      "Ft_cond05_ready_kW": -Infinity,
+      "Ft_uniform_ready_kW": -Infinity,
+      "Ft_pooled_ready_kW": -Infinity
+    }
+  ],
+  "uniform_box": {
+    "w_Q_kW": 271.6495009338995,
+    "E_MJ": 240.60534614579652,
+    "w_D_K": 3.014079936935238
+  },
+  "pooled_box": {
+    "w_Q_kW": 256.2052185900918,
+    "E_MJ": 201.0730564494448,
+    "w_D_K": 2.211304948421557
+  }
+}

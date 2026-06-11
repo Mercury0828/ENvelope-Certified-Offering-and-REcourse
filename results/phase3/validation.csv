@@ -1,0 +1,7 @@
+bin,policy,q_committed_kW,certifiable,n,n_in_box,safety_viol_in_box,safety_viol_out_box,delivery_fail_rate,delivery_fail_ci95_hi,mpc_switches
+dry-calm,fallback,44.52400494494169,True,500.0,470.0,0.0,1.0,0.0,2.771858582251266e-06,
+dry-calm,mpc,44.52400494494169,True,500.0,470.0,0.0,0.0,0.036,0.05232904690421336,27.0
+dry-bursty,fallback,20.476203646179677,True,500.0,427.0,0.0,1.0,0.0,2.771858582251266e-06,
+dry-bursty,mpc,20.476203646179677,True,500.0,427.0,0.0,0.0,0.036,0.05232904690421336,91.0
+humid-calm,n/a,0.0,False,,,,,,,
+humid-bursty,n/a,0.0,False,,,,,,,

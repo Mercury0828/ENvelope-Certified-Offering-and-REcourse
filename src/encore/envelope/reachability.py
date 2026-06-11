@@ -86,13 +86,42 @@ def activation_steps(spec: EnvelopeSpec) -> int:
     return m_act
 
 
-def build_lifted(p: PlantParams, spec: EnvelopeSpec) -> Lifted:
+class _ZeroTube:
+    """Margin-free default; see tighten.tube.TubeMargins for the robust version."""
+
+    dew_shift = 0.0
+
+    @staticmethod
+    def x_margin(t, j):
+        return 0.0
+
+    @staticmethod
+    def u_margin(t):
+        return 0.0
+
+    @staticmethod
+    def ramp_margin(t):
+        return 0.0
+
+    @staticmethod
+    def terminal_margin(H_row, N):
+        return 0.0
+
+
+def build_lifted(p: PlantParams, spec: EnvelopeSpec, tube=None) -> Lifted:
+    """Assemble Gz <= h; with `tube` (tighten.tube.TubeMargins) every row is tightened
+    by the worst-case tube-error contribution and the condensation floor is robustified
+    by the dew residual bound — feasibility of the result IS the fallback certificate
+    (guide 6.5, D-027/D-028)."""
     n = spec.n_states
     m = 1 if n == 2 else 2
     N = spec.horizon_steps
     dt = p.dt_ctrl
     Q = p.Q_IT_nom if spec.Q_IT is None else spec.Q_IT
     m_act = activation_steps(spec)
+    tube = tube or _ZeroTube()
+    if not isinstance(tube, _ZeroTube) and n != 2:
+        raise NotImplementedError("tube-tightened envelope scoped to 2-state (D-027)")
 
     Ad, Bud, Bwd = discrete_matrices(p, n, dt)
     nz = n + 1 + N * m
@@ -115,7 +144,7 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec) -> Lifted:
     cop_ref = float(power.cop(p, p.T_in_nom, spec.T_wb))
     P_base = P_pump + Q / cop_ref          # frozen exogenous baseline (guide 5.4)
     chiller_share = P_base - P_pump
-    floor = T_in_floor(p, spec.T_dew)
+    floor = T_in_floor(p, spec.T_dew + tube.dew_shift)   # robustified condensation floor
     mc_max, mc_min = p.m_dot_max * p.cp, p.m_dot_min * p.cp
     ramp = p.q_ext_ramp * dt
 
@@ -140,21 +169,24 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec) -> Lifted:
     if n == 3:
         add_state_ub(0, 2, p.T_f_max)
 
-    # ---- safety along the hour
+    # ---- safety along the hour (tightened by state tube margins)
     for t in range(1, N + 1):
-        add_state_ub(t, 0, p.T_max)
+        add_state_ub(t, 0, p.T_max - tube.x_margin(t, 0))
         if n == 3:
-            add_state_ub(t, 2, p.T_f_max)
+            add_state_ub(t, 2, p.T_f_max - tube.x_margin(t, 2))
 
-    # ---- U(x) bounds at both step endpoints (D-010), affine in x via state maps
+    # ---- U(x) bounds at both step endpoints (D-010), affine in x via state maps;
+    #      tightened by input margin (K e_t) + state margin at the bound's endpoint
     for t in range(N):
         for s in (t, t + 1):
+            mg_ub = tube.u_margin(t) + mc_max * tube.x_margin(s, 1)
+            mg_lb = tube.u_margin(t) + mc_min * tube.x_margin(s, 1)
             # u_ext,t <= mc_max (T_w,s - floor)
             r_ = np.zeros(nz); r_[iu(t)] = 1.0
-            add(r_ - mc_max * X_coef[s, 1], mc_max * (X_const[s, 1] - floor))
+            add(r_ - mc_max * X_coef[s, 1], mc_max * (X_const[s, 1] - floor) - mg_ub)
             # u_ext,t >= mc_min (T_w,s - T_in_max)
             r_ = np.zeros(nz); r_[iu(t)] = -1.0
-            add(r_ + mc_min * X_coef[s, 1], mc_min * (p.T_in_max - X_const[s, 1]))
+            add(r_ + mc_min * X_coef[s, 1], mc_min * (p.T_in_max - X_const[s, 1]) - mg_lb)
             if n == 3:
                 # passive CDU (D-005): u_ext,t <= mc_max (T_w,s - T_f,s - delta_hx)
                 r_ = np.zeros(nz); r_[iu(t)] = 1.0
@@ -174,8 +206,8 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec) -> Lifted:
     # ---- ramp on q_ext between consecutive steps (first step free, D-021)
     for t in range(1, N):
         r_ = np.zeros(nz); r_[iu(t)] = 1.0; r_[iu(t - 1)] = -1.0
-        add(r_, ramp)
-        add(-r_, ramp)
+        add(r_, ramp - tube.ramp_margin(t))
+        add(-r_, ramp - tube.ramp_margin(t))
 
     # ---- power-cut / delivery on the rejection channel (D-006 surrogate)
     # rejection variable: u_ext for n=2 (q_rej == q_ext), u_rej for n=3
@@ -186,14 +218,16 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec) -> Lifted:
         # q_rej,t + cop_ref * q <= cop_ref * chiller_share for activated steps
         for t in range(m_act):
             r_ = np.zeros(nz); r_[rej_col(t)] = 1.0; r_[iq] = cop_ref
-            add(r_, cop_ref * chiller_share)
+            add(r_, cop_ref * chiller_share - tube.u_margin(t))
     elif spec.delivery == "cumulative":
         # sum_{t<m_act} (P_base - P_t) dt >= r q DH, P_t = P_pump + q_rej,t/cop_ref
         r_ = np.zeros(nz)
+        delivery_margin = 0.0
         for t in range(m_act):
             r_[rej_col(t)] = dt / cop_ref
+            delivery_margin += (dt / cop_ref) * tube.u_margin(t)
         r_[iq] = m_act * dt          # r*DH = m_act*dt by construction of m_act
-        add(r_, m_act * dt * chiller_share)
+        add(r_, m_act * dt * chiller_share - delivery_margin)
     else:
         raise ValueError(spec.delivery)
 
@@ -208,7 +242,8 @@ def build_lifted(p: PlantParams, spec: EnvelopeSpec) -> Lifted:
         H, h_term = spec.terminal
         H = np.atleast_2d(np.asarray(H, dtype=float))
         for row, b in zip(H, np.atleast_1d(h_term)):
-            add(row @ X_coef[N], float(b) - row @ X_const[N])
+            add(row @ X_coef[N],
+                float(b) - row @ X_const[N] - tube.terminal_margin(row, N))
 
     base = {"P_base_W": P_base, "P_pump_W": P_pump, "cop_ref": cop_ref,
             "chiller_share_W": chiller_share}

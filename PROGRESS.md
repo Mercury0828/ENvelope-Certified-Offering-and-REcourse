@@ -40,12 +40,27 @@ phase2:
     - walkthrough_artifact    # WALKTHROUGH.md + zip prepared; tag phase2-done after owner GO
     - self_audit
   gate_verdict: GO            # geometric route adopted; ML-surrogate fallback retired
-next_phase: 3                 # tightening + fallback — DO NOT START until owner confirms gate 2
-status: STOPPED_AT_GATE_2     # per guide Section 11, awaiting owner decision
+gate2_owner_decision: GO      # confirmed by owner 2026-06-10
+phase3:
+  status: complete            # acceptance pass on synthetic ground truth; SELF_AUDIT written
+  completed_steps:
+    - synthetic_ground_truth  # data/synthetic.py (D-025)
+    - conditional_boxes       # conformal k-NN budget polytopes W(c) (D-031, D-033)
+    - tube_margins            # greedy support-function margins, LQR gain sweep (D-027)
+    - tightened_envelope      # build_lifted(tube=) — F-tilde
+    - fallback_certificate    # control/fallback.py (D-028)
+    - online_mpc              # depth-indexed margins + fallback switch (D-029, D-032)
+    - validation_experiment   # 500 scen/bin: 0 in-box violations; MPC fail 3.6% <= eps
+  key_results:
+    proto_F1: context-free certification EMPTY everywhere; conditional certifies 44.6/20.6 kW (dry bins, ready state); humid bins uncertifiable at d=30 eps=0.1 (synthetic process)
+  caveat: numbers are synthetic-process-dependent; refit on real data when it lands
+phase4:
+  status: not_started
+  next_step: D-1 offering layer (6.6) + baseline generator + settlement simulator; embed 3-state lifted envelope as constraints; auto-continue applies (no gate)
+remote: https://github.com/Mercury0828/ENvelope-Certified-Offering-and-REcourse (main; push at milestones)
+skill_js: lessons pushed (29c93a4)
 owner_todo:
-  - provide GitHub remote URL for ENCORE (no remote configured; gh CLI absent)
-  - confirm gate 2 (R1: geometric route GO)
-  - data list for Phase 3 will be generated on gate-2 GO (ERCOT, KIAH, GPU traces)
+  - download data per data/DATA_REQUEST.md (ERCOT prices, KIAH weather, GPU traces) — needed for Phase 5/6 realism; Phase 4 can proceed on synthetic prices meanwhile
 ```
 
 ## Narrative log
@@ -67,3 +82,12 @@ owner_todo:
   anti-conservative); VB within 2.7% of LP; envelope-vs-dewpoint monotone (weather
   coupling lives in the pre-cool/ready state and E_cap). **GATE #2 (R1) VERDICT: GO —
   geometric route adopted.** Stopped at gate 2; Phase 3 not started.
+- **2026-06-10** Owner confirmed Gate #2 GO; skill_js lessons pushed; ENCORE remote
+  wired and pushed (main + tags). Phase 3 executed on synthetic contextual ground
+  truth: conformal k-NN budget-polytope W(c) (a pure amplitude box provably empties
+  the envelope — D-031), tube-tightened F̃ with swept LQR gain, fallback certificate =
+  tightened-LP feasibility, depth-indexed-margin MPC with fallback switch. Validation:
+  0 in-box safety violations (500 scen × 2 policies × 2 certifiable bins), delivery
+  failure 0%/3.6% ≤ ε=10%, corner + beyond-box injections behave. Proto-F1: context-free
+  certification empty everywhere; conditional certifies 44.6/20.6 kW (dry), humid bins
+  flagged no-offer (synthetic-process-dependent; R2-honesty). Phase 4 next (no gate).

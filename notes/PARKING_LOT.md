@@ -29,3 +29,10 @@ rationale, and stays out of the code.
   at q ∈ {50, 65} kW, d=30; stress at higher q and consecutive activations in Phase 3.
 - **Exact 3-state (x, q) projection.** Unneeded for D-1 (lifted embedding, D-018); only
   revisit if a 3-state *certificate artifact* (printable H-rep) is ever required.
+- **Conformal calibration of W(c).** Phase 3 absorbs k-NN edge bias with quantile-level
+  slack (D-031); split-conformal per context bin would give finite-sample marginal
+  coverage guarantees — Phase 6 refinement, also strengthens the Thm-2 statement.
+- **3-state tube margins.** Certification currently 2-state (D-027); needed if the D-1
+  layer commits against the 3-state product envelope with disturbance robustness.
+- **Affine disturbance-feedback fallback.** Reviewer-response ammunition per guide 6.5;
+  the budget-polytope support function generalizes directly.

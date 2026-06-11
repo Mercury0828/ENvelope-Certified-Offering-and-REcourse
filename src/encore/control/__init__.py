@@ -1,1 +1,1 @@
-﻿"""Placeholder (later phases per guide Section 12)."""
+"""Online layer: certified fixed-gain fallback + cheap deterministic MPC (guide 6.5)."""

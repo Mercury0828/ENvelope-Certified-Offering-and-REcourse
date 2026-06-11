@@ -269,3 +269,89 @@ floating-point tie-breaks.
 **Finding/decision.** Enforcing constraints at 5-min marks admits ≤ +0.4 K intra-step
 T_j excursions (layer C). Fold a 0.5 K state-constraint margin into the Phase-3 tube
 tightening rather than densifying the control grid. Parked in PARKING_LOT for Phase 3.
+
+## 2026-06-10 — D-025: Phase 3 runs on synthetic contextual ground truth first
+
+**Decision.** The tightening/fallback machinery is built and validated against a seeded
+synthetic conditional disturbance process (`src/encore/data/synthetic.py`) whose ground
+truth is known — so quantile-box coverage is verifiable exactly. Real data
+(ERCOT/KIAH/GPU traces per `data/DATA_REQUEST.md`) refits the same estimator with no
+code changes. **Rationale.** Coverage validation against a known distribution is the
+only way to *test* the estimator (real data can only show consistency); also unblocks
+Phase 3 while the owner collects files.
+
+## 2026-06-10 — D-026: W(c) record definition and box construction
+
+**Decision.** Historical records are HOURLY summaries: (max over the hour's 5-min steps
+of the heat-load deviation, hourly dew-point forecast residual). Box per context via
+k-NN (k = 200, normalized features): heat two-sided at [ε/4, 1−ε/4], dew one-sided at
+1−ε/2 — Bonferroni joint coverage ≥ 1−ε, and containment of one record ≡ containment
+of the hour's whole disturbance trajectory (what Thm 2 needs).
+
+## 2026-06-10 — D-027: Tube margins and scope
+
+**Decision.** Fallback policy u = ū + K(x − x̄) with fixed K from discrete LQR
+(feedback-authority level swept over {20, 50, 100} kW/K offline; best mean-F̃ kept and
+logged by the experiment). Margins M_t = Σ|A_K^i E_d|·w̄_Q tighten every lifted-row
+(states, U(x) bounds, ramp, delivery, terminal); the condensation floor is robustified
+by w̄_D. Symmetric heat bound w̄_Q = max(|lo|, hi) of the box. Certification scoped to
+the 2-state envelope (guide's default geometry); 3-state tube margins deferred to the
+Phase-4 embedding work.
+
+## 2026-06-10 — D-028: The fallback certificate IS the tightened LP
+
+**Decision.** "Certified" means exactly: the tube-tightened lifted LP is feasible at
+(x₀, q), and the certificate object is its nominal trajectory + the fixed gain
+(guide 6.5's definition, implemented literally in `control/fallback.py`).
+
+## 2026-06-10 — D-029: Online MPC form
+
+**Decision.** Deterministic suffix LP each 5 min: nominal constraints, current dew
+forecast, remaining-delivery constraint, terminal state in the readiness polygon,
+L1 tracking of the certified plan as objective; on infeasibility switch permanently to
+the fallback policy for the rest of the hour. No robustness online (guide 6.4).
+
+## 2026-06-10 — D-030: Two unconditional comparators for the value-of-context result
+
+**Decision.** Proto-F1 compares F̃_conditional against (a) the *pooled-marginal* box —
+common practice, demonstrably under-covers bursty bins (invalid certificate there), and
+(b) the *uniform* box (elementwise max over a context sample) — the smallest valid
+context-free certificate, against which F̃_cond ≥ F̃_uniform holds bin-wise (guide
+6.4's geometric claim). **Rationale.** Comparing only against (a) would overstate the
+value of context by using an invalid baseline; the honest headline is "context buys
+depth in calm bins AND validity in bursty bins".
+
+## 2026-06-10 — D-031: W(c) is a budget-augmented polytope, not a pure box
+
+**Question.** Treating the hourly-max heat-deviation quantile as a *persistent*
+per-step bound made tube margins consume the entire thermal headroom: the tightened
+envelope was EMPTY at the nominal state even at q = 0 (a 1-hour worst case of "the
+burst bound applies at every step" is ~10× the energy of any real disturbance hour).
+
+**Decision.** W(c) = { w : w_t ≤ w̄(c) ∀t, Σ_t max(w_t, 0)·Δt ≤ Ē(c) } × {dew ≤ d̄(c)}
+— the energy-budget face encodes that bursts are short. Historical records gain the
+third channel (positive-deviation energy); per-face quantiles at 1−ε/4 with k = 150
+(the Bonferroni slack absorbs k-NN edge-smoothing bias; conformal calibration parked
+for Phase 6). Tube margins become the exact support function of the budget polytope —
+a greedy largest-coefficients-first fill, still closed-form. Guide 6.3 explicitly
+allows polytopic W. Negative deviations carry no budget: they can only cause benign
+input clipping (less extraction than commanded ⇒ more delivered cut, colder loop);
+covered by the empirical validation rather than the margin calculus, stated honestly.
+
+**Rationale.** This is the difference between "certifiable product exists" and "tube
+machinery technically correct but useless" — and it is itself a finding for the paper:
+duration-style flexibility certification NEEDS a disturbance-energy face, a pure
+amplitude box is structurally too conservative.
+
+## 2026-06-10 — D-032: Online MPC carries depth-indexed tube margins
+
+**Question.** The first MPC (nominal constraints, guide's "deterministic MPC" read
+literally) violated T_max inside the box — it plans onto the exact boundary and one
+positive deviation crosses it.
+
+**Decision.** The suffix LP carries the same offline tube margins indexed by prediction
+depth k (error restarts at each re-solve from the measured state). Since M_k is
+nondecreasing, suffix margins ≤ certificate margins at the same absolute time, so the
+certified fallback plan stays suffix-feasible — recursive feasibility (Thm-3 template)
+holds by construction. Still deterministic, still no online min-sup; margins are fixed
+offline numbers added to RHS vectors.
