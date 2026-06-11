@@ -1,0 +1,22 @@
+{
+  "eps": 0.1,
+  "n_obligations": 186,
+  "n_warm_starts": 111,
+  "n_failures_total": 0,
+  "failures_by_cause": {
+    "warm_start": 0,
+    "out_of_box": 0,
+    "clean_in_box": 0
+  },
+  "cold_start_failure_rate": 0.0,
+  "cold_start_ci95": [
+    0.0,
+    0.047995064055142256
+  ],
+  "overall_failure_rate": 0.0,
+  "method": "Clopper-Pearson exact",
+  "source": "borg",
+  "scale": 0.5,
+  "label": "trainhall",
+  "n_states": 3
+}

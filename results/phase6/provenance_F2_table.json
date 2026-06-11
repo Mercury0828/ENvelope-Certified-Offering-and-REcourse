@@ -1,6 +1,6 @@
 {
-  "timestamp_utc": "2026-06-11T04:21:16.294868+00:00",
-  "git_hash": "1b1a0fe2a6946799fe2ad7628bf05f26c8269900",
+  "timestamp_utc": "2026-06-11T05:32:42.262507+00:00",
+  "git_hash": "45f983022f0c656c7918ee496451af83cad7d4c8",
   "config_path": "E:\\Project-git\\ENvelope-Certified Offering and REcourse\\config\\plant.yaml",
   "config_sha256": "ee76c5a5f4768b5cc993f92f6b8216dfb1df31c2bc2cf7b2662386fc6cb1bbb3",
   "seed": 20260610,
@@ -11,16 +11,32 @@
   "experiment": "phase6_F2_table",
   "seeds": 20,
   "weeks": {
-    "mild": "2024-04-01",
-    "humid": "2023-08-14",
-    "scarcity": "2024-01-14"
+    "w03-jan-scarcity": "2024-01-14",
+    "w07-feb": "2024-02-12",
+    "w11-mar": "2024-03-11",
+    "w14-apr-mild": "2024-04-01",
+    "w20-may": "2024-05-13",
+    "w24-jun": "2024-06-10",
+    "w29-jul": "2024-07-15",
+    "w33-aug-humid": "2024-08-12",
+    "w37-sep": "2024-09-09",
+    "w42-oct": "2024-10-14"
   },
-  "kappas": [
-    1.0,
-    0.5
+  "configs": [
+    [
+      "alibaba",
+      1.0,
+      "alibaba"
+    ],
+    [
+      "borg",
+      0.5,
+      "trainhall"
+    ]
   ],
+  "n_states": 3,
   "certificate_validity": {
-    "1.0": {
+    "alibaba": {
       "eps": 0.1,
       "n_obligations": 0,
       "n_warm_starts": 0,
@@ -37,12 +53,15 @@
       ],
       "overall_failure_rate": 0.0,
       "method": "Clopper-Pearson exact",
-      "kappa": 1.0
+      "source": "alibaba",
+      "scale": 1.0,
+      "label": "alibaba",
+      "n_states": 3
     },
-    "0.5": {
+    "trainhall": {
       "eps": 0.1,
-      "n_obligations": 171,
-      "n_warm_starts": 77,
+      "n_obligations": 186,
+      "n_warm_starts": 111,
       "n_failures_total": 0,
       "failures_by_cause": {
         "warm_start": 0,
@@ -52,11 +71,14 @@
       "cold_start_failure_rate": 0.0,
       "cold_start_ci95": [
         0.0,
-        0.03848335099752879
+        0.047995064055142256
       ],
       "overall_failure_rate": 0.0,
       "method": "Clopper-Pearson exact",
-      "kappa": 0.5
+      "source": "borg",
+      "scale": 0.5,
+      "label": "trainhall",
+      "n_states": 3
     }
   }
 }

@@ -98,10 +98,20 @@ pre_paper_audit:
     held-out coverage 0.904, bit-reproducible; kappa=1 true-negative reported
   owner_decisions_pending:
     - 3-state tube margins (certify the S2 product) vs scope the claim to coolant loop
+pre_phase7_upgrades:
+  status: complete            # all four owner-approved items (D-049/D-050)
+  certified_product: 3-state S2 facility-loop tranche
+  data: [alibaba PAI trace (real, ~zero-certifiable: sustained swings),
+         trainhall scenario (literature-anchored), real NWP dew forecasts 2024,
+         10 ERCOT/KIAH weeks x 20 seeds]
+  final_validation: 186 obligations 0 failures (CP95<=4.8%, eps=0.1); B4 zero
+    violations in 1,400 trainhall day-seeds; B2 245 violation-days max 12.9K
 phase7:
-  status: not_started         # paper drafting — OWNER-SUPERVISED, not autonomous (guide §11)
-  next_step: owner kicks off drafting sessions; verify-flagged citations (guide §3) must be checked first
-autonomous_pipeline: COMPLETE  # phases 0-6 done + pre-paper audit; all gates passed
+  status: ready_to_start      # paper drafting — OWNER-SUPERVISED (guide §11)
+  next_step: owner kicks off drafting sessions; FIRST verify-flagged citations
+    (guide §3); then e0 pre-positioning lemma + setup conventions (load anchoring,
+    trainhall scenario justification) into the theory/setup sections
+autonomous_pipeline: COMPLETE  # phases 0-6 + pre-paper audit + approved upgrades
 remote: https://github.com/Mercury0828/ENvelope-Certified-Offering-and-REcourse (main; push at milestones)
 skill_js: lessons pushed (29c93a4)
 owner_todo:

@@ -1,89 +1,66 @@
-# Phase 6 — SELF AUDIT (regenerated 2026-06-11 after the pre-paper audit; supersedes
-# the 2026-06-10 version, whose closed-loop numbers predate D-046/D-047/D-048)
+# Phase 6 — SELF AUDIT (final, 2026-06-11; supersedes earlier versions)
 
-Every number below is read from a committed artifact in this directory (file named in
-parentheses). The evidence chain is the CORRECTED one: hour-continuous state (no
-teleporting), CRC32 deterministic seeds, day-block held-out replay (fit days 0–20,
-eval days 21–30), causal climatology forecast, conformal W(c) with a-priori face
-allocation, tube margins with the e₀ = 1.5 K warm-start ball, whole-hour settlement
-certification + activation-window depth cap, adjacency-pruned commitments, sprint
-recovery between events.
+Final configuration after the pre-paper audit (D-046/047/048) and the owner-approved
+upgrades (D-049/050): **certified 3-state S2 product**, real Alibaba-PAI ML-cluster
+trace + literature-anchored "trainhall" scenario, real day-ahead NWP dew forecasts,
+10 real 2024 ERCOT/KIAH weeks × 20 seeds, hour-continuous simulation, held-out
+day-block validation, CRC32-deterministic seeds. Every number below is read from a
+named committed artifact.
 
 ## Acceptance checklist (guide §11, Phase 6)
 
 | Criterion | Status | Evidence |
 |---|---|---|
-| Figures publication-grade, shared style | **PASS** | F1_context, F2_portfolio_k{100,050}, F3_cdeg (PDF+PNG, encore.mplstyle) |
-| Every number regenerable by one `make figures` | **PASS** | executed end-to-end post-fix; `FIGURES_MANIFEST.json`; CRC32 seeds make reruns bit-comparable |
-| Provenance manifest | **PASS** | FIGURES_MANIFEST.json + per-experiment provenance JSONs |
-| F1–F3 + main table + stress, 20+ seeds | **PASS** | this directory; two workload scenarios κ ∈ {1.0, 0.5} |
+| Publication-grade figures, shared style | **PASS** | F1_context, F2_portfolio_{alibaba,trainhall}, F3_cdeg (PDF+PNG) |
+| One-command regeneration + provenance | **PASS** | `make figures`; FIGURES_MANIFEST.json; bit-reproducible seeds |
+| F1–F3 + main table + stress, 20+ seeds | **PASS** | 2 configs × 10 weeks × 20 seeds = 2,800 B4 controller-days |
 
 ## Headline results
 
-**F1 — the certification wall** (`F1_kappa.csv`, `F1_dew.csv`): at hour 14, dry day,
-held-out-fit conformal W(c): the d = 30 product certifies 76.7 kW at κ = 0.1, 35.8 kW
-at κ = 0.5, 3.6 kW at κ = 0.8 and **nothing at κ = 1.0** (Borg-2019 cell-a at full-hall
-scale, ~±25%/h); d = 15 certifies exactly 2× throughout (energy-driven product).
-Context-free certification is zero at every κ and every dew point. At κ = 0.5 the dew
-wall sits near 16 °C for d = 30.
+**F1 — the certification wall** (`F1_kappa.csv`, `F1_dew.csv`): certified S2 offers vs
+workload volatility (Borg-scaled axis): 187.7 kW (κ=0.1) → 81.0 (κ=0.5) → 36.3
+(κ=0.65) → 0 (κ≥0.8), d=30, dry. **Both real public traces sit at/beyond the wall**:
+Borg cell-a (κ=1, short bursts) and Alibaba PAI (tail-κ≈0.77 but hourly-energy face
+643 MJ vs Borg's 275 — sustained day-ahead-unforecastable load swings) certify ~0.
+Panel (b): dew coupling on real NWP forecasts.
 
-**Main table, 20 seeds × 3 real weeks** (`main_table_k050.csv` / `_k100.csv`):
+**Main table** (`main_table_{alibaba,trainhall}.csv`, 10 weeks × 20 seeds):
+- **alibaba (real PAI trace):** B4 rationally commits nothing (= B1) — the honest
+  public-data result. Summer weeks show 7–51 violation-days for the IDLE plant itself
+  (max +4.5 K): sustained-overload hours (residuals anchored at the 1 MW nominal reach
+  1.33 MW) exceed floor-limited cooling capacity in Houston summer — an
+  infrastructure-sizing observation, identical across B1/B4 (D-050; the load-anchoring
+  convention is a setup choice the paper must state).
+- **trainhall (literature-anchored steadier-hall scenario):** B4 **+$12.5/day** market
+  value averaged over all 10 weeks (92 kW/day committed; scarcity week higher),
+  delivery ratio 1.00, penalties $0, **zero hotspot violations in 1,400 day-seeds**;
+  B2: 245 violation-days, worst +12.9 K; B3 +$14.4 with no guarantee; B5 +$6.5
+  (capex drag); B6 +$25.6 (QoS-cost knob).
 
-| κ = 0.5 | mv $/day (±σ) | Σq kW/day | delivery ratio | penalties | viol days |
-|---|---|---|---|---|---|
-| B4 humid | **+40.0 ± 40.6** | 44.4 | 1.00 | 0 | **0** |
-| B4 scarcity | **+34.3 ± 52.4** | 165.6 | 1.00 | 0 | **0** |
-| B4 mild | +1.0 | 19.7 | 1.00 | 0 | 0 |
-| B2 (no cert) humid | +243.7 | 347.9 | 0.96 | $1.40/day | **73 days, max 6.2 K** |
-| B3 (SAA) humid | +74.7 | 85.8 | 1.00 | 0 | 0 (no guarantee) |
+**Certificate validity** (`certificate_validity_trainhall.json`): **186 obligations,
+0 delivery failures of any kind** (111 warm starts — all inside the e₀ ball + sprint
+recovery — 0 failed; 0 out-of-box failures; 0 clean-in-box failures). Clopper–Pearson
+95% upper bound **4.8% ≤ ε = 10%**. On alibaba the gate is vacuous (0 obligations) and
+stated.
 
-At κ = 1.0 B4 rationally commits nothing anywhere (true negative, reported); B2 still
-violates on 10–75 days/week.
+**F3** (`F3_cdeg.csv`, trainhall, S2 scale): scarcity-day committed capacity falls
+monotonically 1,511 → 524 kW as c_deg sweeps 0.5 → 50 $/K·h (value $916 → $554/day);
+the mild day exits above c_deg ≈ 20–50.
 
-**Certificate validity** (`certificate_validity_k050.json`): 171 obligations on
-held-out replay days — **0 delivery failures of any kind** (0 warm-start, 0
-out-of-box, 0 clean-in-box); Clopper–Pearson 95% upper bound 3.85% ≤ ε = 10%. 77 of
-171 events started warm (within the e₀ ball after sprint recovery) and all delivered.
-Held-out joint box coverage 0.904 (target ≥ 0.90, 240 eval hours).
+**Stress** (`stress_summary.csv`, trainhall): B4 zero violations, zero shortfall, zero
+penalties under the all-hours-burst, +3 K dew-shift and 6-hour-consecutive-call days;
+B2 6.0–13.4 K violations with penalties in all three.
 
-**F3** (`F3_cdeg.csv`, κ = 0.5): scarcity-day commitment falls monotonically
-431 → 134 kW as c_deg sweeps 0.5 → 50 $/K·h (value $262 → $141/day); the mild day
-exits the market above c_deg ≈ 10–20. γ ∈ {1.5,3}× moves nothing for B4 (zero in-box
-penalties).
+## Honest notes (carried to the paper)
 
-**Stress** (`stress_summary.csv`, κ = 0.5, deliberately beyond-box): B4 — zero
-violations, zero shortfall, zero penalties in ALL three scenarios (all-hours top-decile
-burst day, +3 K dew shift, 6-hour consecutive calls); B2 — 2.6–5.5 K violations and
-penalties in all three. Graceful-degradation criterion met with margin.
-
-## What changed since the superseded audit (D-046/D-047/D-048)
-
-1. Hour-boundary state teleportation fixed → recovery energy and warm starts real.
-2. CRC32 seeds → bit-reproducible experiments (root cause of the earlier
-   audit-vs-artifact mismatch).
-3. Day-block held-out replay + causal forecast → no in-sample circularity.
-4. Clopper–Pearson CIs; theory-faithful certificate gates with failure attribution.
-5. ε face allocation (0.45/0.45/0.10) + e₀ = 1.5 K ball (derived) in the tube.
-6. **Settlement alignment**: certification now enforces BOTH the activation-window
-   depth cap and the whole-hour settlement energy (guide 5.3) — window-only
-   certification was anti-conservative once in-hour recovery existed.
-7. **Structural finding**: the infinite-horizon readiness fixed point is EMPTY under
-   whole-hour settlement (consecutive full-depth delivery is thermodynamically
-   impossible) → commitments are adjacency-pruned and recovery hours use a sprint law
-   (full extraction headroom, ~20 min for a 15 K excursion); terminal startability
-   holds by construction.
-
-## Honest notes / open risks
-
-- κ = 0.5 is a labeled SCENARIO (steadier-hall reference), not a measurement: Borg
-  cell-a at κ = 1 supports no certified d=30/ε=0.1 product, and the paper must lead
-  with that as a finding about workload volatility, using the κ-wall as the
-  requirement curve. Real dedicated-training-hall traces would replace κ.
-- Warm-start coverage relies on the e₀ = 1.5 K ball + sprint recovery; the bound is
-  derived from the idle law, not yet stated as a lemma — Phase-7 theory writing must
-  formalize it (or condition Thm 2 explicitly).
-- Dew channel remains the NWP-skill model (D-042); heat channel is real.
-- ε = 0.05 certification: zero at κ ≥ 0.5 (F1_kappa.csv dashed curve) — stated.
-- B5/B6 risk cells are model assumptions (render n/a); B3's clean weeks are luck, not
-  guarantee; B2's mv remains inadmissible-by-safety.
-- 2-state certified product (D-027); S2/3-state numbers are deterministic capability.
+- The trainhall configuration is a labeled SCENARIO (training power is near-constant
+  in published measurements; emulated as Borg×0.5) — both real public traces defeat
+  ε=0.1/d=30 certification through distinct mechanisms (bursts vs sustained swings);
+  the genuine missing ingredient is operator job-schedule context (guide 6.2),
+  unavailable in any public trace.
+- PAI summer idle-plant violations = sustained overload under the residual-anchoring
+  convention (D-042/D-050); alternative anchoring (plant rated at trace peak) is a
+  listed Phase-7 setup discussion.
+- Heather-week days before 2024-01-19 lack archived forecasts (obs-as-forecast
+  fallback, 5 of 70 days, disclosed).
+- ε = 0.05 and pre-cool-cost/weather-coupled-COP items unchanged (parked, listed).

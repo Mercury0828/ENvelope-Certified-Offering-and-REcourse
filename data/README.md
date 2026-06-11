@@ -13,6 +13,9 @@ dataset. Owner-approved source plan recorded as D-034.
 | KIAH hourly weather (T_amb, T_dew, RH), 2023-01-01→2024-12-31 UTC | Iowa Environmental Mesonet ASOS, station IAH, routine hourly METARs (`report_type=3`) | mesonet.agron.iastate.edu/cgi-bin/request/asos.py | 2026-06-10 | `weather/kiah_asos_2023_2024.csv` (17,545 rows, 0% missing tmpf/dwpf) |
 | Google Borg 2019 cell-a instance_usage (4 random shards, ~2.5M rows, full 31 days) | public GCS bucket, unauthenticated HTTPS (parquet exports; note: `.parquet.gz` files are plain parquet despite the name) | storage.googleapis.com/clusterdata_2019_a/instance_usage-00000000000{0..3}.parquet.gz | 2026-06-10 | `traces/google2019a/instance_usage-*.parquet.gz` |
 | → processed 1 MW hall profile, 5-min mean + peak | `experiments/preprocess_google_trace.py` (sum-of-sampled-usage shape, affine power map idle=0.3 [est], ~6% sampling noise) | derived | 2026-06-10 | `traces/google2019a/hall_profile_5min.csv`, `hall_profile_stats.json` |
+| Alibaba PAI GPU-2020 instance+sensor tables (ML training/inference cluster) | aliopentrace OSS, anonymous HTTPS (D-050) | aliopentrace.oss-cn-beijing.aliyuncs.com/v2020GPUTraces/ | 2026-06-11 | `traces/alibaba2020/pai_{instance,sensor,machine_metric,machine_spec}*.tar.gz` |
+| → processed 1 MW hall profile (worker-lifetime superposition, 2.0 M workers, 50.7 days; join rate 42.6%) | `experiments/preprocess_alibaba_trace.py` | derived | 2026-06-11 | `traces/alibaba2020/hall_profile_5min.csv`, `hall_profile_stats.json` |
+| KIAH day-ahead NWP dew forecasts + residuals, 2024 (archive starts 2024-01-19) | Open-Meteo previous-runs API, `dew_point_2m_previous_day1` (D-050) | previous-runs-api.open-meteo.com | 2026-06-11 | `weather/kiah_dew_forecast_2024.csv` (8,340 h; resid std 2.01 K, q95 3.7 K) |
 
 ## Known caveats
 

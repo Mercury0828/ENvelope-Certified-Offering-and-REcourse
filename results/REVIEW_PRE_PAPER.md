@@ -90,6 +90,26 @@ and rigorous within explicitly stated scope; remaining improvements are listed l
 9. Peak-channel concurrency correction for burst overlays (data/README caveat).
 10. B6 opportunity-cost sweep (honesty knob for F2).
 
+## 3b. Owner-approved backlog — RESOLUTION (2026-06-11, D-049/D-050)
+
+1. **3-state tube margins — DONE**: the certified product is now the gate-approved S2
+   facility-loop tranche (2×3 LQR gain, per-channel margins, CDU/q_rej row tightening);
+   closed-loop chain, offering and stress all run on it. B10 retired.
+2. **Real training-hall trace — DONE, with a finding**: Alibaba PAI GPU-2020 acquired
+   and processed (2.0 M workers, 50.7 days). It certifies ~zero at d=30/ε=0.1 — not
+   from bursts (its tails are thinner than Borg) but from SUSTAINED hour-scale load
+   swings (energy face 643 vs 275 MJ), i.e., day-ahead job-schedule context is the
+   missing ingredient. Paper structure: both real traces = public-data upper bounds;
+   closed loop runs on PAI (honest near-zero) + a literature-anchored trainhall
+   scenario, where the certificate validates 0/186 (CP95 ≤ 4.8%).
+3. **Real NWP dew forecasts — DONE**: Open-Meteo previous-runs archive (2024, KIAH):
+   measured DA residual std 2.01 K replaces the 1.2 K [est] model in records and in
+   per-day realized residuals; all 10 evaluation weeks moved into 2024.
+4. **e₀ lemma — scheduled** for Phase-7 theory writing (mechanism implemented and
+   exercised: 111/111 warm starts delivered).
+5. **More obligations — DONE**: 10 weeks × 20 seeds; 186 obligations on the validated
+   configuration with zero failures.
+
 ## 4. Process lessons (pushed to skill_js after owner sign-off)
 - A clean-context adversarial reviewer found in hours what weeks of green tests
   missed: **assertions inherited from flawed evidence chains pass flawlessly**.
