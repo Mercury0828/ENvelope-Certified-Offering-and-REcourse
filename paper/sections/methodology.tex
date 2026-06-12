@@ -186,7 +186,7 @@ deployed conditioning is hour-of-day; the dew-point forecast enters through
 the floor and the ready state), and it is verified out of sample in
 Section~\ref{sec:experimental_evaluation}. Commitment hours are selected by
 value, and the validation therefore tests coverage on the \emph{selected}
-hours directly rather than assuming it transfers.
+hours directly; it does not assume that coverage transfers.
 
 Calibration uses $k=80$ conditioning neighbors and $150$ calibration points
 per face, with hour-of-day features; the allocation $0.35/0.35/0.30$ across
@@ -368,6 +368,6 @@ Algorithm~\ref{alg:encore} is a small linear program in the lifted variable
 offering takes seconds on a workstation, and the online layer is a
 fixed-gain affine policy plus an optional suffix LP re-solve, so no
 iterative robust optimization runs in real time. The certified depth is
-therefore limited by information (the context) rather than by computation.
+therefore limited by information (the context), not by computation.
 
 \vspace{-2mm}

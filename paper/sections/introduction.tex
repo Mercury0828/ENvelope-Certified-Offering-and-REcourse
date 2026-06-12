@@ -170,10 +170,10 @@ predictive control (MPC) layer, and experimental market
 demonstrations~\cite{vrettos2016scheduling,vrettos2016robust,gorecki2017experimental}.
 ENCORE descends from this line and departs where the resource does: the
 feasible set's lower boundary is an exogenous stochastic variable (the dew
-point) rather than a static comfort band, the dynamics are minutes-scale
-loop physics against seconds-scale GPU bursts rather than hours-scale
-building mass, and the deliverable is the certified envelope object itself
-rather than a reserve schedule.
+point), not a static comfort band; the dynamics are minutes-scale
+loop physics against seconds-scale GPU bursts, not hours-scale
+building mass; and the deliverable is the certified envelope object itself,
+not a reserve schedule.
 
 \textit{3) Certifying the maximum offer.} Do-not-exceed limits for variable
 resources~\cite{zhao2015variable}, dynamic operating envelopes for
@@ -181,7 +181,7 @@ distribution-connected resources~\cite{aemo2022doe}, aggregate virtual
 batteries for thermostatic loads~\cite{hao2015aggregate}, flexibility
 functions~\cite{junker2018characterizing}, and policy-based
 reserves~\cite{warrington2013policy} all certify an admissible operating
-region rather than a point forecast. ENCORE is the thermal-resource member of
+region, not a point forecast. ENCORE is the thermal-resource member of
 this family. Within it, the combination of an \emph{exact} deliverability
 polyhedron, a context-conditional (conformal~\cite{lei2018distribution})
 uncertainty description, and a settlement that prices the residual delivery
