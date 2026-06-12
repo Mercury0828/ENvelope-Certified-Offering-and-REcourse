@@ -51,3 +51,14 @@ Final state: 10.0 pages, 29 references, 2 negligible overfull boxes (3.0pt,
 1.5pt), compiles clean with bibtex. Owner inputs outstanding: 6 bibliography
 entries marked %% OWNER-VERIFY in refs.bib (slide-sourced titles/volumes) and
 the affiliation/funding block in main.tex.
+
+## Owner revision round (2026-06-11, 7 directives)
+
+1 affiliations removed; 2 envelope-slices figure moved to IV (now IV-B with the
+duration sweep); 3 main table tripled (3 blocks x 8 settlement-decomposition
+columns incl. the negative-DeltaWear finding); 4 F1 -> single-column stacked
+flat panels; 5 portfolio/F3 flattened; 6 added Fig day-trace (new closed-loop
+sim, B2 crosses Tmax verified on-figure), Fig weekly-value bars, Fig duration
+sweep, Table stress; text trimmed around them; 7 page budget relaxed -> final
+10.7 pages (11 phys., last page 71%). All figures regenerated via
+experiments/paper_figures.py from committed artifacts + one logged day-sim.

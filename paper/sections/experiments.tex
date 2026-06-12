@@ -88,50 +88,98 @@ they differ only in the envelope they trust.
 \centering
 \caption{Closed-loop market performance over ten 2024 ERCOT weeks $\times$
 $20$ seeds ($1{,}400$ day-seeds per participant, per MW of IT load). MV:
-market value relative to Idle. Delivery ratio: delivered over required
+market value relative to Idle (mean $\pm$ std over day-seeds). Delivery
+ratio: delivered over required
 energy. Violations: hotspot day-seeds (maximum excursion, K); in-domain:
 realized disturbance in $\Wsafe(c)$ (\S\ref{subsec:cert}). Bold marks
 the proposed certified participant.}
 \label{tab:summary}
 \setlength{\tabcolsep}{4pt}
 \scriptsize
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrrr}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrrrrrr}
 \toprule
 \textbf{Block} & \textbf{Method}
+& \textbf{Revenue}
+& \textbf{RT shift}
+& \textbf{Penalty}
+& \textbf{$\Delta$Wear$^{\ddagger}$}
 & \textbf{MV (\$/day)}
-& \textbf{Committed (kW/day)}
-& \textbf{Delivery ratio}
-& \textbf{Penalty (\$/day)}
-& \textbf{Violations: days (max K)} \\
+& \textbf{Committed}
+& \textbf{Delivery}
+& \textbf{Violations:} \\
+ & & (\$/day) & (\$/day) & (\$/day) & (\$/day) & mean $\pm$ std
+ & (kW/day) & ratio & days (max K) \\
 \midrule
 \multirow{6}{*}{Ten-week average}
-& Idle (B1)            & $0.0$            & $0$    & --     & $0.00$ & 5 (0.25)$^{\dagger}$ \\
-& Det.\ envelope (B2)  & $35.1 \pm 50.5$  & $388$  & $0.82$ & $1.49$ & $229$ ($9.8$) \\
-& Sample approx.\ (B3) & $14.9 \pm 24.2$  & $126$  & $0.97$ & $0.25$ & $47$ ($4.9$) \\
-& \textbf{ENCORE (B4)} & $\mathbf{10.6 \pm 15.7}$ & $54$ & $0.95$ & $0.17$
+& Idle (B1)            & $0.00$  & $0.00$  & $0.00$  & --      & $0.0$            & $0$    & --     & 5 (0.25)$^{\dagger}$ \\
+& Det.\ envelope (B2)  & $37.24$ & $-1.05$ & $1.49$  & $+1.71$ & $35.1 \pm 126.2$  & $388$  & $0.81$ & $229$ ($9.8$) \\
+& Sample approx.\ (B3) & $15.65$ & $-0.22$ & $0.25$  & $+0.69$ & $14.9 \pm 63.0$  & $126$  & $0.96$ & $47$ ($4.9$) \\
+& \textbf{ENCORE (B4)} & $9.65$  & $-0.15$ & $0.17$  & $\mathbf{-0.98}$ & $\mathbf{10.6 \pm 52.9}$ & $54$ & $0.93$
   & $\mathbf{0}$ \textbf{in-dom.}, 10 beyond ($1.6$) \\
-& Battery (B5)         & $6.5 \pm 17.6$   & $616$  & $1.00$ & $0.00$ & $0$ \\
-& Curtailment (B6)     & $25.6 \pm 35.8$  & $333$  & $1.00$ & $0.00$ & $0$ \\
+& Battery (B5)         & $16.07$ & $0.00$  & $0.00$  & --      & $6.5 \pm 47.8$   & $616$  & $1.00$ & $0$ \\
+& Curtailment (B6)     & $29.14$ & $0.00$  & $0.00$  & --      & $25.6 \pm 96.1$  & $333$  & $1.00$ & $0$ \\
 \midrule
 \multirow{6}{*}{Scarcity week (Heather)}
-& Idle (B1)            & $0.0$             & $0$      & --     & $0.00$  & $0$ \\
-& Det.\ envelope (B2)  & $221.9 \pm 337.5$ & $1{,}220$ & $0.77$ & $11.78$ & $57$ ($9.0$) \\
-& Sample approx.\ (B3) & $113.6 \pm 166.8$ & $541$    & $0.93$ & $2.23$  & $15$ ($4.9$) \\
-& \textbf{ENCORE (B4)} & $\mathbf{97.1 \pm 140.4}$ & $414$ & $0.92$ & $1.65$
+& Idle (B1)            & $0.00$   & $0.00$  & $0.00$   & --      & $0.0$             & $0$       & --     & $0$ \\
+& Det.\ envelope (B2)  & $241.58$ & $-0.28$ & $11.78$  & $+8.16$ & $221.9 \pm 337.5$ & $1{,}220$ & $0.77$ & $57$ ($9.0$) \\
+& Sample approx.\ (B3) & $112.67$ & $-0.23$ & $2.23$   & $-2.98$ & $113.6 \pm 166.8$ & $541$     & $0.93$ & $15$ ($4.9$) \\
+& \textbf{ENCORE (B4)} & $91.92$  & $-0.17$ & $1.65$   & $\mathbf{-6.67}$ & $\mathbf{97.1 \pm 140.4}$ & $414$ & $0.92$
   & $\mathbf{0}$ \textbf{in-dom.}, 5 beyond ($1.6$) \\
-& Battery (B5)         & $76.5 \pm 126.4$  & $764$    & $1.00$ & $0.00$  & $0$ \\
-& Curtailment (B6)     & $166.2 \pm 255.5$ & $871$    & $1.00$ & $0.00$  & $0$ \\
+& Battery (B5)         & $89.24$  & $0.00$  & $0.00$   & --      & $76.5 \pm 126.4$  & $764$     & $1.00$ & $0$ \\
+& Curtailment (B6)     & $176.20$ & $0.00$  & $0.00$   & --      & $166.2 \pm 255.5$ & $871$     & $1.00$ & $0$ \\
+\midrule
+\multirow{6}{*}{Shoulder week (April)}
+& Idle (B1)            & $0.00$ & $0.00$  & $0.00$ & --      & $0.0$           & $0$    & --     & $0$ \\
+& Det.\ envelope (B2)  & $9.61$ & $-1.81$ & $0.20$ & $+0.75$ & $10.5 \pm 13.3$ & $296$  & $0.85$ & $16$ ($6.3$) \\
+& Sample approx.\ (B3) & $3.97$ & $-1.30$ & $0.00$ & $+0.01$ & $5.3 \pm 8.4$   & $112$  & $0.99$ & $2$ ($1.4$) \\
+& \textbf{ENCORE (B4)} & $1.62$ & $-1.25$ & $0.01$ & $\mathbf{-1.26}$ & $\mathbf{4.1 \pm 6.4}$ & $52$ & $0.97$
+  & $\mathbf{0}$ ($0.0$) \\
+& Battery (B5)         & $5.03$ & $0.00$  & $0.00$ & --      & $-4.2 \pm 3.3$  & $807$  & $1.00$ & $0$ \\
+& Curtailment (B6)     & $6.57$ & $0.00$  & $0.00$ & --      & $4.5 \pm 6.3$   & $200$  & $1.00$ & $0$ \\
 \bottomrule
-\multicolumn{7}{l}{\footnotesize $^{\dagger}$Exogenous summer workload-tail
+\multicolumn{10}{l}{\footnotesize $^{\dagger}$Exogenous summer workload-tail
 days exceeding the plant's sizing with no market participation; identical for
-B4.}
+B4. $^{\ddagger}$Degradation cost relative to Idle: negative means
+participation \emph{reduces} hotspot wear (the pre-cooled hours run colder
+than the nominal point).}
 \end{tabular*}
 \vspace{-5mm}
 \end{table*}
 
 \vspace{-3mm}
-\subsection{The Certification Wall and the Value of Information}
+\subsection{The Certified Object: Geometry, Duration, and Information}
 \label{subsec:wall}
+
+Fig.~\ref{fig:slices} shows the certified object directly: exact slices of
+$\mathcal{D}(c)$ in the state plane, the startable sets $\mathcal{R}(q)$ of
+Section~\ref{sec:methodology}, for three depths. Their left boundary is the
+hotspot constraint propagated backward and their right boundary is the
+condensation floor acting through \eqref{eq:Ux}. Between the dry and humid
+panels the $150$\,kW region nearly vanishes while the $25$\,kW region barely
+moves: humidity removes the \emph{deep} product first.
+Fig.~\ref{fig:duration} resolves the same capability along the product axis:
+the certified offer decays monotonically with the duration $d$, and the
+humid-day curve sits uniformly below the dry-day curve --- the quantitative
+basis for treating $d$ as a product parameter rather than a variable.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../results/phase2/envelope_slices.pdf}
+\caption{Exact deliverable-set slices $\mathcal{R}(q)$ in the
+$(\Tw,\Tj)$ plane for $q\in\{25,75,150\}$\,kW ($d=30$\,min; dry vs.\ humid
+day; markers: nominal operating state and pre-cooled ready state).}
+\label{fig:slices}
+\vspace{-2mm}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../results/phase6/duration_sweep.pdf}
+\caption{Certified offer vs.\ product duration $d$ (hour 14, design
+configuration; dry vs.\ humid forecast).}
+\label{fig:duration}
+\vspace{-2mm}
+\end{figure}
 
 Fig.~\ref{fig:F1}(a) sweeps the certified offer against residual workload
 volatility (Borg-2019~\cite{tirmazi2020borg} residuals scaled by $\kappa$;
@@ -156,26 +204,26 @@ coupling under the same workload: the conditional envelope degrades smoothly wit
 the NWP dew-point forecast, while a context-free certificate must assume the
 worst hour and forfeits most of the dry-day capability.
 
-\begin{figure*}[t]
+\begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{../results/phase6/F1_context.pdf}
+\includegraphics[width=\columnwidth]{../results/phase6/F1_context.pdf}
 \caption{The certified envelope on measured records ($d=30$\,min,
-$\epsd=0.3$, $\epss=0.05$). (a)~Certified offer vs.\ residual workload
-volatility $\kappa$ (relative to the Borg-2019 trace); markers: the
-PAI-workload hall under climatology vs.\ job-aware day-ahead forecasts
-($40.7\to 74.6$\,kW). (b)~Weather coupling: conditional vs.\ context-free
-certification vs.\ the deterministic ceiling, against the archived day-ahead
-NWP dew-point forecast.}
+$\epsd=0.3$, $\epss=0.05$). (a)~Certification wall vs.\ workload volatility
+$\kappa$; markers: the PAI-workload hall under climatology vs.\ job-aware
+forecasts ($40.7\to 74.6$\,kW). (b)~Weather coupling vs.\ the archived
+day-ahead NWP dew-point forecast.}
 \label{fig:F1}
 \vspace{-2mm}
-\end{figure*}
+\end{figure}
 
 \vspace{-3mm}
 \subsection{Ten-Week Closed-Loop Market Results}
 \label{subsec:market}
 
-Table~\ref{tab:summary} aggregates $1{,}400$ day-seeds per participant.
-Three observations order the comparison.
+Table~\ref{tab:summary} aggregates $1{,}400$ day-seeds per participant and
+decomposes each participant's value into its settlement components;
+Fig.~\ref{fig:weekly} resolves the certified participants by week. Three
+observations order the comparison.
 
 \emph{1) Safety is the product.} The deterministic envelope monetizes the
 most capacity ($\$35.1$/day per MW of IT load) but violates the hotspot limit
@@ -212,6 +260,21 @@ are portfolio complements; only the cooling loop requires neither new
 hardware nor workload sacrifice, and its marginal cost is priced thermal
 wear.
 
+A fourth observation comes free in the wear column: ENCORE's
+$\Delta$Wear is \emph{negative} in every block --- the pre-cooled ready
+hours run colder than the nominal operating point, so certified
+participation slightly extends silicon life while monetizing flexibility,
+whereas the uncertified envelope adds wear on top of its violations.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../results/phase6/weekly_mv.pdf}
+\caption{Weekly market value by participant over the ten 2024 weeks
+(symlog scale; weeks labeled by month).}
+\label{fig:weekly}
+\vspace{-2mm}
+\end{figure}
+
 Fig.~\ref{fig:portfolio} resolves Table~\ref{tab:summary} by week in the
 value--safety plane. Every participant's weekly cloud sits on a frontier
 whose horizontal axis is paid in violations: the deterministic envelope buys
@@ -229,6 +292,31 @@ $\times$ $20$ seeds (colors: participants B1--B6; markers: weeks; bars:
 $\pm 1\sigma$ over seeds).}
 \label{fig:portfolio}
 \vspace{-3mm}
+\end{figure}
+
+\vspace{-3mm}
+\subsection{Anatomy of an Activation Day}
+\label{subsec:trace}
+
+Fig.~\ref{fig:trace} opens the closed loop on the highest-value scarcity day
+(January 16; one seed). The repeating sawtooth is the product's heartbeat:
+pre-cool toward the ready state ahead of each committed hour, hold, and
+recover in the spaced uncommitted hour that follows
+(Proposition~\ref{prop:spacing}); the activated obligation (shaded)
+delivers its window, and the certified hotspot trace stays below the limit
+all day. The deterministic envelope commits roughly triple the depth on the
+same calls, accumulates heat through its midday cluster of commitments, and
+crosses $\Tmax$ in the early afternoon: the regime the certificate excludes
+by construction.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{../results/phase6/day_trace.pdf}
+\caption{Closed-loop traces on the scarcity day 2024-01-16 (one seed;
+shaded: activated committed hours). Top: ECRS price. Middle: metered cooling
+power vs.\ baseline. Bottom: hotspot temperature vs.\ $\Tmax$ (dashed).}
+\label{fig:trace}
+\vspace{-2mm}
 \end{figure}
 
 \vspace{-3mm}
@@ -293,12 +381,40 @@ $[0.073, 0.201]$: consistent with $0.1$ at $95\%$ confidence.}
 \vspace{-3mm}
 \end{table}
 
-\emph{Beyond every set.} Three adversarial stress days designed outside all
-calibrated sets (all-hours top-decile bursts; a $+3$\,K systematic dew-point
-shift; six consecutive activations) bound the failure mode: ENCORE's worst
-excursion is $2.2$\,K with penalties of at most ${\sim}\$10$/day, versus
-the deterministic envelope's $4.3$--$6.9$\,K with $4$--$25\times$ larger
-shortfalls: graceful degradation precisely where no certificate applies.
+\emph{Beyond every set.} Table~\ref{tab:stress} reports three adversarial
+stress days designed outside all calibrated sets. They bound the failure
+mode: ENCORE's worst excursion is $2.2$\,K with penalties of at most
+${\sim}\$10$/day, versus the deterministic envelope's $4.3$--$6.9$\,K with
+$4$--$25\times$ larger shortfalls: graceful degradation precisely where no
+certificate applies.
+
+\begin{table}[t]
+\centering
+\caption{Adversarial stress days outside every calibrated set (5 seeds;
+worst-case excursion, total shortfall, and penalty per day).}
+\label{tab:stress}
+\setlength{\tabcolsep}{3.5pt}
+\scriptsize
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Stress day} & \textbf{Method} & \textbf{Max exc.\ (K)}
+& \textbf{Shortfall (kWh)} & \textbf{Penalty (\$)} \\
+\midrule
+\multirow{2}{*}{All-hours bursts}
+& Det.\ envelope (B2) & $6.92$ & $60.1$ & $15.76$ \\
+& \textbf{ENCORE (B4)} & $\mathbf{2.20}$ & $\mathbf{13.8}$ & $\mathbf{5.02}$ \\
+\midrule
+\multirow{2}{*}{$+3$\,K dew shift}
+& Det.\ envelope (B2) & $4.25$ & $72.5$ & $17.10$ \\
+& \textbf{ENCORE (B4)} & $\mathbf{0.00}$ & $\mathbf{2.9}$ & $\mathbf{0.29}$ \\
+\midrule
+\multirow{2}{*}{Six consecutive calls}
+& Det.\ envelope (B2) & $5.05$ & $154.7$ & $45.95$ \\
+& \textbf{ENCORE (B4)} & $\mathbf{0.00}$ & $\mathbf{19.5}$ & $\mathbf{10.35}$ \\
+\bottomrule
+\end{tabular}
+\vspace{-3mm}
+\end{table}
 
 \vspace{-3mm}
 \subsection{Degradation-Cost Sensitivity of the Supply Curve}

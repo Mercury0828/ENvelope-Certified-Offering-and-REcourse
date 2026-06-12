@@ -107,31 +107,14 @@ nominal load with the supply temperature at the robust floor (the floor
 \eqref{eq:floor} evaluated at the forecast shifted by the calibrated dew
 margin of Section~\ref{subsec:sets}); it is the deepest pre-cool position the
 condensation constraint certifiably allows, and the offering pre-positions
-the plant there before each obligation. Fig.~\ref{fig:slices} shows the
-certified object directly: exact slices of $\mathcal{D}(c)$ in the state
-plane, i.e., the startable sets $\mathcal{R}(q)=\{x:F(x,c)\ge q\}$ for three
-depths. The sets are nested
-polytopes whose left boundary is the hotspot constraint propagated backward
-and whose right boundary is the condensation floor acting through
-\eqref{eq:Ux}. Between the
-dry and humid panels the $150$\,kW region nearly vanishes while the
-$25$\,kW region barely moves, which is the geometric form of the weather
-coupling: humidity removes the \emph{deep} product first. Quantitatively,
-the calibrated model sustains $53$--$59\%$ of baseline cooling power for
-$d=30$\,min from the nominal operating state, and $90\%$ from the pre-cooled
-ready state on a dry day; the envelope collapses toward zero as the
-dew-point forecast approaches the supply floor. The thermal mass is a
-genuine half-hour resource whose size is weather-coupled.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{../results/phase2/envelope_slices.pdf}
-\caption{Exact deliverable-set slices $\mathcal{R}(q)$ in the
-$(\Tw,\Tj)$ plane for $q\in\{25,75,150\}$\,kW ($d=30$\,min; dry vs.\ humid
-day; markers: nominal operating state and pre-cooled ready state).}
-\label{fig:slices}
-\vspace{-3mm}
-\end{figure}
+the plant there before each obligation. The startable sets
+$\mathcal{R}(q)=\{x:F(x,c)\ge q\}$ are nested polytopes in the state plane;
+Section~\ref{subsec:wall} computes them exactly on the calibrated hall.
+Quantitatively, the calibrated model sustains $53$--$59\%$ of baseline
+cooling power for $d=30$\,min from the nominal operating state, and $90\%$
+from the pre-cooled ready state on a dry day; the envelope collapses toward
+zero as the dew-point forecast approaches the supply floor. The thermal mass
+is a genuine half-hour resource whose size is weather-coupled.
 
 Projecting $\mathcal{D}(c)$ onto aggregate power--energy coordinates gives a
 closed-form virtual-battery approximation~\cite{hao2015aggregate} whose
