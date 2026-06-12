@@ -129,14 +129,14 @@ C_\mathrm{w}\,\frac{d\Tw}{dt} = h_{\mathrm{jw}}\bigl(\Tj(t)-\Tw(t)\bigr)
 \end{equation}
 
 \emph{Facility-water node.} The facility loop provides the second, larger
-tranche (time constant near an hour), and is what makes a half-hour product
+tranche (time constant near an hour), and makes a half-hour product
 physically possible:
 \begin{equation}
 C_\mathrm{f}\,\frac{d\Tf}{dt} = \uext(t) - \urej(t).
 \label{eq:facility}
 \end{equation}
 
-All nonlinearity is confined to the state-dependent input set
+The state-dependent input set is
 \begin{equation}
 \mathcal{U}(x;c)=\Bigl\{u:
 \begin{aligned}
@@ -228,8 +228,7 @@ $r_h=0$). The market interval is $\dH = 1$\,h.
 
 \begin{remark}[Market realism]\label{rem:market}
 The product is a \emph{generic short-duration reserve abstraction} and the
-only institutional element in the model. It does not claim to replicate any
-specific ERCOT service: qualification, telemetry, and performance rules of
+only institutional element in the model. Qualification, telemetry, and performance rules of
 the ERCOT Contingency Reserve Service (ECRS) are not modeled; ECRS clearing
 prices serve as the capacity-price stream, and $p_{\mathrm{act}}$ and $\gamma$ are product design parameters
 whose sensitivity Section~\ref{subsec:cert} reports. Economic results are
@@ -259,9 +258,9 @@ energy.
 
 \begin{remark}[Baseline]\label{rem:baseline}
 The baseline is exogenous and known. Baseline manipulation is a documented
-phenomenon in demand-response programs~\cite{chao2011demand}; it is orthogonal
-to deliverability and excluded by construction, as in the buildings-reserves
-literature~\cite{vrettos2016robust}.
+phenomenon in demand-response programs~\cite{chao2011demand}; it is a
+separate problem from deliverability, and the baseline is taken as given
+here as in the buildings-reserves literature~\cite{vrettos2016robust}.
 \end{remark}
 
 \vspace{-3mm}

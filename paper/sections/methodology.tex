@@ -11,9 +11,7 @@ $F(x,c)$; nested conformal disturbance sets and exact tube margins robustify
 it into $\Ft(x,c)$ (constructed in Section~\ref{subsec:tube}), from which the
 day-ahead offer is drawn; and a certified
 fallback policy underwrites the real-time layer, so the delivery guarantee
-survives from commitment to metering. The remainder of the section
-establishes exactness of the envelope, the virtual-battery equivalent, the
-two-clause end-to-end guarantee, and the computational profile.
+holds from commitment to metering.
 
 % --------------------------- FIGURE 2 --------------------------------
 \begin{figure}[t]
@@ -56,7 +54,7 @@ two-clause end-to-end guarantee, and the computational profile.
 \caption{ENCORE pipeline. Offline, nested conformal sets and exact tube
 margins tighten the deliverability polyhedron into $\Ft(x,c)$; the day-ahead
 offer is drawn from its interior. Online, a certified fallback policy backs
-the rolling controller, so Theorem~\ref{thm:main} survives to settlement.}
+the rolling controller, so Theorem~\ref{thm:main} holds through settlement.}
 \label{fig:ctrl_arch}
 \vspace{-3mm}
 \end{figure}
@@ -114,7 +112,7 @@ Quantitatively, the calibrated model sustains $53$--$59\%$ of baseline
 cooling power for $d=30$\,min from the nominal operating state, and $90\%$
 from the pre-cooled ready state on a dry day; the envelope collapses toward
 zero as the dew-point forecast approaches the supply floor. The thermal mass
-is a genuine half-hour resource whose size is weather-coupled.
+is a half-hour resource whose size is weather-coupled.
 
 Projecting $\mathcal{D}(c)$ onto aggregate power--energy coordinates gives a
 closed-form virtual-battery approximation~\cite{hao2015aggregate} whose
@@ -240,7 +238,7 @@ $\vartheta(c)$ evaluated at $\Tdew^{\mathrm{fc}}+\bar D(c)$, in both the
 constraint rows and the ready state. The result is the tightened envelope
 $\Ft(x,c)\le F(x,c)$.
 
-The ball $\bar e_0$ is not free: it is what the uncommitted hour of
+The ball $\bar e_0$ is set by what the uncommitted hour of
 Proposition~\ref{prop:spacing} can actually deliver.
 
 \begin{lemma}[Disturbance-aware pre-positioning]\label{lem:e0}
@@ -264,8 +262,8 @@ the steady error never vanishes. The certificate's design ball
 $\bar e_0 = 1.25$\,K instantiates \eqref{eq:e0} at the fit block's median
 hourly disturbance magnitude with $K_{\mathrm{rec}}=80$\,kW/K and
 $\kappa_{\mathrm{eff}}=\mdot c_p$; disturbances above that level can push a
-start outside the ball, which is exactly what the validation of
-Section~\ref{sec:experimental_evaluation} counts. A certificate built on
+start outside the ball; the validation of
+Section~\ref{sec:experimental_evaluation} counts these starts. A certificate built on
 transient-only reasoning ($\bar e_0\approx 0.25$\,K) overstates readiness
 and fails in closed loop.
 
@@ -312,10 +310,9 @@ itself during events, so the headline results carry the theorem's guarantee
 directly.
 \end{remark}
 
-The guarantee never depends on the online layer: the certificate \emph{is}
-the fallback. This inversion, a deliberately simple real-time layer
-underwritten by an offline certificate, is the opposite of robustifying the
-online controller itself as in~\cite{shen2026cdro}.
+The guarantee never depends on the online layer: the fallback policy itself
+carries the certificate, the opposite of robustifying the online controller
+as in~\cite{shen2026cdro}.
 
 % ---------------------------------------------------------------------
 \subsection{Day-Ahead Offering and Computational Profile}
