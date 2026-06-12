@@ -97,3 +97,5 @@ Declined/deferred: robust-MPC/DRO offering as full baselines (the single-set
 Final: 12 phys. pages (~11.4 content) per relaxed budget; suite 51/51.
 
 ## Baseline restructuring (owner, 2026-06-11): B7 single-risk robust + B8 context-free promoted into Table III with full 20-seed/3-block statistics (mainline_b7b8.csv); ablation table kept at 5 rows with cross-reference footnote; B2 = online-MPC-without-envelope mapping and B7 = robust-MPC/DRO-family proxy stated in IV-A; table footnotes moved outside tabular (fixed 761pt natural-width overflow).
+
+## Full-paper verification round (owner, 2026-06-11): two clean-context verifiers. Logic: 7 fixed (portfolio fig regenerated WITH B7/B8; B5/B6 MV footnote; fit-block gloss; ECRS in Remark 2; limits (iii) incl B7-B8; eqref-below). Data: 230+/240 numbers re-derived exactly; 3 MED prose fixes (failed-starts median 7.0K; sweep -18% full; beyond-domain 5+5 split); LOWs (wear convention, ablation 38). 19% figure verified vs jobaware_stats.json. Verdict: claims supported at stated n; certified-start bound CP95<=15.4% stated honestly.

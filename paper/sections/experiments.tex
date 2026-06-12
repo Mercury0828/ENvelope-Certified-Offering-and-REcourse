@@ -165,7 +165,9 @@ for B4. $^{\ddagger}$Degradation cost relative to Idle: negative means
 participation \emph{reduces} hotspot wear (the pre-cooled hours run colder
 than the nominal point). $^{\S}$Warm starts: activated obligations beginning
 at the envelope boundary (\S\ref{subsec:cert}); zero for participants
-without thermal events.}
+without thermal events. B5/B6 market value nets charging-energy and
+quality-of-service costs not itemized in these columns; their hall wear
+stays at Idle ($\Delta$Wear $0$ by convention).}
 \vspace{-5mm}
 \end{table*}
 
@@ -321,7 +323,7 @@ without re-deriving the risk case week by week.
 \centering
 \includegraphics[width=\columnwidth]{../results/phase6/F2_portfolio_jobaware_eps03.pdf}
 \caption{Weekly market value vs.\ maximum hotspot excursion over ten weeks
-$\times$ $20$ seeds (colors: participants B1--B6; markers: weeks; bars:
+$\times$ $20$ seeds (colors: participants B1--B8; markers: weeks; bars:
 $\pm 1\sigma$ over seeds; x-axis broken between the violation-free and
 violating clusters).}
 \label{fig:portfolio}
@@ -370,8 +372,9 @@ routinely: $100$ of $122$ obligations).
 
 \emph{Safety clause.} Across $1{,}400$ day-seeds, no violation episode
 starts in an in-domain hour with a certified start: zero such episodes,
-matching clause (i) on its stated domain. The ten beyond-domain episodes
-are bounded by $1.6$\,K.
+matching clause (i) on its stated domain. The ten beyond-domain episodes are bounded by $1.6$\,K; five of them are
+the exogenous workload-tail days shared with Idle, leaving five tied to
+market participation.
 
 \emph{Delivery clause and premise accounting.} Of $122$ activated
 obligations at the design point, $24$ fell short ($19.7\%$, within the
@@ -383,12 +386,13 @@ obligations, overlapping): \textbf{zero certified starts failed} ($0$ of
 $22$ cold; exact $95\%$ Clopper--Pearson upper bound $15.4\%$), which is
 exactly clause (ii) on its stated premise. All $24$ failures started beyond
 both conditions, displaced by in-hour load swings (median displacement
-$4.1$\,K), and they land inside the priced $\epsd$ budget rather than
+$7.0$\,K among the failures; $4.1$\,K over all obligations), and they land
+inside the priced $\epsd$ budget rather than
 outside the settlement. The offering objective accepts this trade by
 construction, and it is stable in the product parameters: sweeping
 $p_{\mathrm{act}}$ from $0.05$ to $0.30$ and $\gamma$ from $1.5$ to $3$
 moves the scarcity-day commitment smoothly from $1{,}084$ to $866$\,kW and
-its expected value by $-8\%$, with no cliffs (Remark~\ref{rem:market}).
+its expected value by $-18\%$ across the full sweep, with no cliffs (Remark~\ref{rem:market}).
 Table~\ref{tab:frontier} reports the $\epsd$ frontier: the conservative
 point certifies less depth and fails less often, the design point monetizes
 more and pays more penalty, and both stay within their stated budgets. The
@@ -494,7 +498,7 @@ they appear with full $20$-seed statistics.}
 \textbf{Nested $(\epss,\epsd)$ (ours)} & $10.6$ & $54$ & $24/122$
 & $\mathbf{0}$ & $10$ ($1.6$) \\
 Single set, $\varepsilon=0.3$  & $15.6$ & $112$ & $10/51$ & $0$ & $18$ ($4.9$) \\
-Single set, $\varepsilon=0.05$ & $8.5$  & $37$  & $5/34$  & $0$ & $7$ ($1.9$) \\
+Single set, $\varepsilon=0.05$ & $8.5$  & $38$  & $5/34$  & $0$ & $7$ ($1.9$) \\
 Context-free nested            & $8.0$  & $40$  & $5/29$  & $0$ & $5$ ($0.7$) \\
 Window-only certification      & $12.3$ & $62$  & $27/33$ & $3$ & $7$ ($2.4$) \\
 \bottomrule
@@ -575,7 +579,7 @@ through a different mechanism. (iii) Metering is at the cooling plant
 against an exogenous baseline (Remark~\ref{rem:baseline}), with the
 frozen-efficiency surrogate and a fixed wet bulb on both the commitment and
 validation sides; a weather-coupled efficiency model changes the energy
-accounting symmetrically across B2--B4 and, with priced pre-cool holding,
+accounting symmetrically across B2--B4 and B7--B8 and, with priced pre-cool holding,
 is the main modeling extension left open. (iv) Beyond the calibrated safety
 set, hardware frequency scaling is the backstop: it engages when $\Tj$
 reaches the throttle threshold and trades compute slowdown for safety for
