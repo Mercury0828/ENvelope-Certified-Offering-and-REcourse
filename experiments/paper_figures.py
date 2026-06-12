@@ -38,61 +38,77 @@ def replot_F1():
     dfa = pd.read_csv(OUT / "F1_kappa.csv")
     dfb = pd.read_csv(OUT / "F1_dew.csv")
     marks = json.load(open(OUT / "provenance_F1.json"))["pai_marks"]
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(3.6, 3.9))
-    ax1.plot(dfa.kappa, dfa.F_kW, color="0.55", lw=1.8, label="F (no uncertainty)")
-    ax1.plot(dfa.kappa, dfa.Ft15_kW, color="C2", lw=1.8, marker="v", ms=3,
-             label="F̃, d = 15")
-    ax1.plot(dfa.kappa, dfa.Ft30_kW, color="C0", lw=2.0, marker="o", ms=3,
-             label="F̃, d = 30")
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.6, 1.75))
+    ax1.plot(dfa.kappa, dfa.F_kW, color="0.55", lw=1.0, label="F")
+    ax1.plot(dfa.kappa, dfa.Ft15_kW, color="C2", lw=1.0, marker="v", ms=2.4,
+             label="F̃, d=15")
+    ax1.plot(dfa.kappa, dfa.Ft30_kW, color="C0", lw=1.1, marker="o", ms=2.4,
+             label="F̃, d=30")
     kc, Fc = marks["climatology"]
     kj, Fj = marks["job-aware"]
-    ax1.plot([kc], [max(Fc, 1)], marker="X", ms=8, color="C3", ls="none",
-             label=f"PAI, climatology fc. ({Fc:.0f} kW)")
-    ax1.plot([kj], [Fj], marker="*", ms=11, color="C1", ls="none",
-             label=f"PAI, job-aware fc. ({Fj:.0f} kW)")
+    ax1.plot([kc], [max(Fc, 1)], marker="X", ms=6, color="C3", ls="none",
+             label=f"clim.\\ fc. ({Fc:.0f})")
+    ax1.plot([kj], [Fj], marker="*", ms=8, color="C1", ls="none",
+             label=f"job-aware ({Fj:.0f})")
     ax1.annotate("", xy=(kj, Fj), xytext=(kc, max(Fc, 1)),
-                 arrowprops=dict(arrowstyle="->", color="C1", lw=1.2, ls="--"))
-    ax1.set_xlabel("residual workload volatility κ (× Borg-2019)", fontsize=7)
-    ax1.set_ylabel("certifiable offer\n[kW/MW IT]", fontsize=7)
-    ax1.set_title("(a) certification wall (dry, hour 14)", fontsize=8)
-    ax1.legend(fontsize=5.6, ncol=2)
-    ax2.plot(dfb.T_dew, dfb.F_kW, color="0.55", lw=1.8, label="F (no uncertainty)")
-    ax2.plot(dfb.T_dew, dfb.Ft15_kW, color="C2", lw=1.8, marker="v", ms=3,
-             label="F̃ cond., d = 15")
-    ax2.plot(dfb.T_dew, dfb.Ft30_kW, color="C0", lw=2.0, marker="o", ms=3,
-             label="F̃ cond., d = 30")
-    ax2.plot(dfb.T_dew, dfb.Ft30_uniform_kW, color="C3", lw=1.8,
-             label="F̃ context-free, d = 30")
-    ax2.set_xlabel("day-ahead NWP dew-point forecast [°C]", fontsize=7)
-    ax2.set_ylabel("certifiable offer\n[kW/MW IT]", fontsize=7)
-    ax2.set_title("(b) weather coupling (PAI-workload hall)", fontsize=8)
-    ax2.legend(fontsize=5.6)
+                 arrowprops=dict(arrowstyle="->", color="C1", lw=0.9, ls="--"))
+    ax1.set_xlabel("volatility κ (× Borg-2019)", fontsize=6.5)
+    ax1.set_ylabel("certifiable offer [kW/MW IT]", fontsize=6.5)
+    ax1.set_title("(a) certification wall", fontsize=7.5)
+    ax1.legend(fontsize=4.8, labelspacing=0.25, handlelength=1.4)
+    ax2.plot(dfb.T_dew, dfb.F_kW, color="0.55", lw=1.0, label="F")
+    ax2.plot(dfb.T_dew, dfb.Ft15_kW, color="C2", lw=1.0, marker="v", ms=2.4,
+             label="F̃ cond., d=15")
+    ax2.plot(dfb.T_dew, dfb.Ft30_kW, color="C0", lw=1.1, marker="o", ms=2.4,
+             label="F̃ cond., d=30")
+    ax2.plot(dfb.T_dew, dfb.Ft30_uniform_kW, color="C3", lw=1.0,
+             label="F̃ ctx-free, d=30")
+    ax2.set_xlabel("DA dew forecast [°C]", fontsize=6.5)
+    ax2.set_title("(b) weather coupling", fontsize=7.5)
+    ax2.legend(fontsize=4.8, labelspacing=0.25, handlelength=1.4)
     for ax in (ax1, ax2):
-        ax.tick_params(labelsize=6.5)
-    fig.tight_layout(h_pad=1.2)
+        ax.tick_params(labelsize=6)
+    fig.tight_layout(w_pad=0.8)
     savefig(fig, OUT / "F1_context")
     plt.close(fig)
 
 
 def replot_portfolio():
+    """Broken x-axis: the safe cluster (~0 K) and the violating cluster (>1 K)
+    with the empty middle folded out."""
     df = pd.read_csv(OUT / "metrics_20seed_jobaware_eps03.csv")
     tab = df.groupby(["week", "controller"]).agg(
         mv_mean=("market_value_usd", "mean"), mv_std=("market_value_usd", "std"),
         viol_max_K=("T_viol_K", "max")).reset_index()
-    fig, ax = plt.subplots(figsize=(3.6, 2.1))
+    fig, (axl, axr) = plt.subplots(1, 2, figsize=(3.6, 2.0), sharey=True,
+                                   gridspec_kw={"width_ratios": [1, 2.4],
+                                                "wspace": 0.06})
     colors = {"B1": "0.5", "B2": "C3", "B3": "C1", "B4": "C0", "B5": "C2", "B6": "C4"}
     markers = ["o", "s", "^", "v", "D", "P", "X", "*", "<", ">"]
     for c, color in colors.items():
         for wi, wk in enumerate(sorted(tab["week"].unique())):
             sub = tab[(tab.controller == c) & (tab.week == wk)]
-            ax.errorbar(sub["viol_max_K"] + 0.01, sub["mv_mean"], yerr=sub["mv_std"],
-                        fmt=markers[wi % len(markers)], color=color, ms=3.2, lw=0.8,
-                        capsize=1.5, label=c if wi == 0 else None)
-    ax.set_xscale("log")
-    ax.set_xlabel("max hotspot excursion [K] (log, +0.01)", fontsize=7)
-    ax.set_ylabel("market value [$/day/MW]", fontsize=7)
-    ax.tick_params(labelsize=6.5)
-    ax.legend(fontsize=5.6, ncol=6, columnspacing=0.8, handletextpad=0.3)
+            for ax in (axl, axr):
+                ax.errorbar(sub["viol_max_K"], sub["mv_mean"], yerr=sub["mv_std"],
+                            fmt=markers[wi % len(markers)], color=color, ms=2.8,
+                            lw=0.7, capsize=1.2,
+                            label=c if (wi == 0 and ax is axl) else None)
+    axl.set_xlim(-0.08, 0.35)
+    axr.set_xlim(0.9, 11)
+    axr.set_xscale("log")
+    axl.spines.right.set_visible(False)
+    axr.spines.left.set_visible(False)
+    axr.tick_params(left=False)
+    d = 0.5
+    kw = dict(marker=[(-1, -d), (1, d)], markersize=6, linestyle="none",
+              color="k", mec="k", mew=1, clip_on=False)
+    axl.plot([1, 1], [0, 1], transform=axl.transAxes, **kw)
+    axr.plot([0, 0], [0, 1], transform=axr.transAxes, **kw)
+    axl.set_ylabel("market value [$/day/MW]", fontsize=7)
+    fig.supxlabel("max hotspot excursion [K] (axis broken)", fontsize=7, y=0.04)
+    for ax in (axl, axr):
+        ax.tick_params(labelsize=6)
+    axl.legend(fontsize=5.2, ncol=2, columnspacing=0.6, handletextpad=0.3)
     fig.tight_layout()
     savefig(fig, OUT / "F2_portfolio_jobaware_eps03")
     plt.close(fig)
@@ -100,14 +116,14 @@ def replot_portfolio():
 
 def replot_F3():
     df = pd.read_csv(OUT / "F3_cdeg.csv")
-    fig, axes = plt.subplots(1, 2, figsize=(3.6, 1.75), sharex=True)
+    fig, axes = plt.subplots(1, 2, figsize=(3.6, 1.3), sharex=True)
     for ax, (day, sub) in zip(axes, df.groupby("day")):
-        ax.semilogx(sub.c_deg, sub.sum_q_kW, color="C0", lw=1.8, marker="o", ms=3)
-        ax.set_title(day.split(" ")[0], fontsize=8)
-        ax.set_xlabel("$c_{deg}$ [\\$/K·h]", fontsize=7)
-        ax.tick_params(labelsize=6.5)
-    axes[0].set_ylabel("committed [kW/day]", fontsize=7)
-    fig.tight_layout()
+        ax.semilogx(sub.c_deg, sub.sum_q_kW, color="C0", lw=1.0, marker="o", ms=2.4)
+        ax.set_title(day.split(" ")[0], fontsize=7.5)
+        ax.set_xlabel("$c_{deg}$ [\\$/K·h]", fontsize=6.5)
+        ax.tick_params(labelsize=6)
+    axes[0].set_ylabel("committed\n[kW/day]", fontsize=6.5)
+    fig.tight_layout(w_pad=0.8)
     savefig(fig, OUT / "F3_cdeg")
     plt.close(fig)
 
@@ -118,16 +134,17 @@ def fig_weekly_mv():
         ["week", "controller"])["market_value_usd"].mean().unstack()
     weeks = sorted(tab.index)
     x = np.arange(len(weeks))
-    fig, ax = plt.subplots(figsize=(3.6, 1.9))
+    fig, ax = plt.subplots(figsize=(3.6, 1.8))
     for i, (c, color) in enumerate([("B2", "C3"), ("B3", "C1"), ("B4", "C0"),
                                     ("B6", "C4")]):
-        ax.bar(x + (i - 1.5) * 0.2, tab[c].loc[weeks], width=0.2, color=color,
-               label=c)
+        ax.bar(x + (i - 1.5) * 0.2, tab[c].loc[weeks], width=0.2,
+               color=color, label=c)
     ax.set_xticks(x)
     ax.set_xticklabels([w.split("-")[1][:3] for w in weeks], fontsize=6.5)
     ax.set_ylabel("market value [$/day/MW]", fontsize=7)
-    ax.set_yscale("symlog", linthresh=5)
-    ax.tick_params(labelsize=6.5)
+    ax.set_yscale("symlog", linthresh=1.0)
+    ax.set_ylim(0, 420)
+    ax.tick_params(labelsize=6)
     ax.legend(fontsize=6, ncol=4)
     fig.tight_layout()
     savefig(fig, OUT / "weekly_mv")
@@ -153,7 +170,7 @@ def fig_duration():
             tube = build_tube(p, 3, 12, bs.w_Q_sym, bs.w_D, K=K, E_budget=bs.E_hi,
                               w_Q_del=b.w_Q_sym, E_del=b.E_hi)
             F.append(max(certified_max_q(p, spec, tube, x), 0) / 1e3)
-        ax.plot(durations, F, color=color, lw=1.8, marker="o", ms=3, label=lbl)
+        ax.plot(durations, F, color=color, lw=1.0, marker="o", ms=2.6, label=lbl)
         assert all(np.diff(F) <= 1e-6), "F not non-increasing in d"
     ax.set_xlabel("product duration d [min]", fontsize=7)
     ax.set_ylabel("certifiable offer\n[kW/MW IT]", fontsize=7)
@@ -194,7 +211,7 @@ def fig_daytrace():
     t5 = np.arange(288) / 12.0
     fig, axes = plt.subplots(3, 1, figsize=(3.6, 3.7), sharex=True)
     ax = axes[0]
-    ax.step(range(24), prices["pi_cap_hourly"], where="post", color="0.3", lw=1.4)
+    ax.step(range(24), prices["pi_cap_hourly"], where="post", color="0.3", lw=0.9)
     ax.set_ylabel("ECRS price\n[$/MWh]", fontsize=7)
     for h in range(24):
         if acts[h] and q4[h] > 0:
@@ -202,15 +219,15 @@ def fig_daytrace():
                 a.axvspan(h, h + 1, color="C1", alpha=0.18, lw=0)
     ax = axes[1]
     Pb = float(np.atleast_1d(base["P_base_W"]).mean())
-    ax.axhline(Pb / 1e3, color="0.5", ls=":", lw=1.2, label="baseline")
-    ax.plot(t5, runs["B2"]["P_cool_W"] / 1e3, color="C3", lw=0.9, label="B2")
-    ax.plot(t5, runs["B4"]["P_cool_W"] / 1e3, color="C0", lw=1.1, label="ENCORE")
+    ax.axhline(Pb / 1e3, color="0.5", ls=":", lw=0.9, label="baseline")
+    ax.plot(t5, runs["B2"]["P_cool_W"] / 1e3, color="C3", lw=0.6, label="B2")
+    ax.plot(t5, runs["B4"]["P_cool_W"] / 1e3, color="C0", lw=0.75, label="ENCORE")
     ax.set_ylabel("cooling power\n[kW]", fontsize=7)
     ax.legend(fontsize=5.6, ncol=3)
     ax = axes[2]
-    ax.axhline(p.T_max, color="r", ls="--", lw=1.0)
-    ax.plot(t5, runs["B2"]["T_j"], color="C3", lw=0.9, label="B2")
-    ax.plot(t5, runs["B4"]["T_j"], color="C0", lw=1.1, label="ENCORE")
+    ax.axhline(p.T_max, color="r", ls="--", lw=0.8)
+    ax.plot(t5, runs["B2"]["T_j"], color="C3", lw=0.6, label="B2")
+    ax.plot(t5, runs["B4"]["T_j"], color="C0", lw=0.75, label="ENCORE")
     ax.set_ylabel("$T_j$ [°C]", fontsize=7)
     ax.set_xlabel("hour of day", fontsize=7)
     ax.legend(fontsize=5.6, ncol=2)
