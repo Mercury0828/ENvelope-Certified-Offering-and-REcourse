@@ -67,7 +67,10 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
     x = plans[0].x_ready.copy()
     P_all, Tj_all, switches, infeasible_starts = [], [], 0, 0
     infeasible_hours = []    # hours whose committed event started outside the
-                             # certificate's e0-ball (warm starts; D-046/D-047)
+                             # TIGHTENED ENVELOPE at the offered depth (warm starts;
+                             # stricter than the theorem's e0-ball premise, D-046)
+    start_err_hourly = []    # per-activated-hour max |x0 - x_ready| [K] for premise
+                             # accounting against the e0 ball (review fix R2)
     T_viol_hourly = []       # per-hour hotspot excursions for safety attribution (D-052)
     clip_events = 0          # hours where the realized condensation floor clipped u
 
@@ -77,6 +80,8 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
         plan = plans[h]
         activated = bool(activations[h]) and plan.q_W > 0 and controller != "idle"
         if activated:
+            start_err_hourly.append(
+                (h, float(np.max(np.abs(x - plan.x_ready)))))
             L = build_lifted(p, plan.spec, tube=plan.tube)
             traj = extract_trajectory(L, x, plan.q_W)
             if traj is None:
@@ -88,8 +93,16 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
                 infeasible_starts += 1
                 infeasible_hours.append(h)
                 traj = extract_trajectory(L, plan.x_ready, plan.q_W)
-            cert = {"x_nom": traj[0], "u_nom": traj[1], "K": K, "q": plan.q_W,
-                    "spec": plan.spec, "base": L.base}
+            if traj is None:
+                # certificate not reconstructible under the simulated plant (model-
+                # mismatch tests): hold toward the ready state; delivery fails and
+                # settles as a shortfall — never silently skipped
+                cert = {"x_nom": np.tile(plan.x_ready, (STEPS_H + 1, 1)),
+                        "u_nom": np.full((STEPS_H, n_inputs), p.Q_IT_nom), "K": K,
+                        "q": plan.q_W, "spec": plan.spec, "base": L.base}
+            else:
+                cert = {"x_nom": traj[0], "u_nom": traj[1], "K": K, "q": plan.q_W,
+                        "spec": plan.spec, "base": L.base}
             if controller == "mpc" and n == 2:
                 ctl, st = mpc_controller(p, cert, tube=plan.tube)
                 out = simulate_policy(p, cert, w_day[h], dew_res_day[h], controller=ctl,
@@ -120,6 +133,7 @@ def run_day(p: PlantParams, plans: list[HourPlan], activations: np.ndarray,
         "P_cool_W": np.concatenate(P_all),
         "T_j": np.concatenate(Tj_all),
         "T_viol_hourly": T_viol_hourly,
+        "start_err_hourly": start_err_hourly,
         "switches": switches,
         "infeasible_starts": infeasible_starts,
         "infeasible_hours": infeasible_hours,

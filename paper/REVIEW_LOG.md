@@ -62,3 +62,36 @@ sim, B2 crosses Tmax verified on-figure), Fig weekly-value bars, Fig duration
 sweep, Table stress; text trimmed around them; 7 page budget relaxed -> final
 10.7 pages (11 phys., last page 71%). All figures regenerated via
 experiments/paper_figures.py from committed artifacts + one logged day-sim.
+
+## External-review response round (2026-06-11, 6 major + 8 minor concerns)
+
+R1 market realism: Remark (market realism) added to II-C; economic claims
+   reworded to "under the ERCOT-price-driven stylized reserve settlement"
+   (abstract/IV/conclusion); p_act x gamma offering sensitivity run (smooth,
+   -20% commitment from p_act 0.05->0.30, -8% value gamma 1.5->3).
+R2 theorem premise: start errors LOGGED on a fresh 20-seed nested replay.
+   certified starts (envelope-feasible 22 or in-ball 17): ZERO failures; all
+   24 failures beyond both conditions (median displacement 4.1 K), inside the
+   priced budget. IV-E rewritten with premise accounting; abstract/conclusion
+   updated to "zero failures among certified starts".
+R3 model validation: envelope-level sensitivity table (C_w/C_f/h_jw +-20%,
+   delta_c+1K, e0x2, COP-20%) added — certificate FAILS SAFE (h_jw-20%, e0x2
+   zero the offer); worst-direction simultaneous-mismatch closed loop reported
+   (violations up to 5.6 K) with conservative-identification guidance.
+R4 ablations (owner-flagged essential): 4 ablated variants replayed over all
+   ten weeks; new Table — single eps=0.3 (+47% value, 18 viol-days 4.9K:
+   safety eroded), single eps=0.05 (-20% value), context-free (-24%),
+   window-only (3 clean-in-box failures, 82% fail rate: certificate broken).
+   Nested design uniquely combines 0 breaks + bounded excursions + value.
+R5 conformal transparency: k/k_cal/features/allocation rationale added to
+   III-B; nesting-direction reminder added.
+R6 scarcity framing: "low-capex scarcity resource, not a high-utilization
+   arbitrage asset" adopted.
+Minor: Table I cell de-advertised; abstract density reduced (40.7->74.6
+   dropped, 83% kept); job-aware mechanism sentence added; DVFS trigger +
+   workload-impact scoping added; Fig.6 ylim from negative; main table 12 cols.
+Declined/deferred: robust-MPC/DRO offering as full baselines (the single-set
+   and context-free ablations cover the risk-level axis; B2 already runs the
+   same MPC machinery — stated in IV-A); per-season coverage table (selected-
+   hour validation is what the certificate gates; noted).
+Final: 12 phys. pages (~11.4 content) per relaxed budget; suite 51/51.

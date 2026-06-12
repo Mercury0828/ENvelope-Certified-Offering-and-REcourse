@@ -99,12 +99,13 @@ set and meets its settled energy obligation at a designer-chosen delivery
 confidence. A case study driven end-to-end by measured workload,
 weather-forecast, and price records (a 2.0-million-worker GPU-cluster
 trace, archived day-ahead weather forecasts, and ten 2024 ERCOT weeks)
-validates both clauses out of sample, with zero in-domain violation episodes
-across ten held-out weeks replayed under $20$ activation draws. Day-ahead
-workload information alone raises the certifiable offer of a hall driven by
-the measured GPU-cluster workload from $40.7$ to $74.6$\,kW per MW of IT
-load, and the certified participant earns \$$97$/day per MW during a
-scarcity week with no added hardware and no workload impact within the
+validates both clauses out of sample: zero violation episodes in the
+certified domain, zero delivery failures among certified starts, and
+residual risk inside the priced budget. Day-ahead workload information
+alone raises the certifiable offer of a hall driven by the measured
+GPU-cluster workload by $83\%$, and under the ERCOT-price-driven stylized
+reserve settlement the certified participant earns \$$97$/day per MW during
+a scarcity week, with no added hardware and no workload impact within the
 certified domain.
 \end{abstract}
 
@@ -128,10 +129,13 @@ centers as a day-ahead offering problem and developed ENCORE, which certifies
 the deliverable (offer, duration) set as a context-dependent polyhedral
 envelope and offers from its robustified interior under nested
 safety/delivery disturbance sets. The certificate survives from commitment to
-real-time control: across ten measured ERCOT weeks, the certified
-participant incurred zero violation episodes within its stated domain while
-delivery failures remained inside the priced $\epsd$ budget, against $229$
-violation day-seeds for the uncertified envelope. Day-ahead workload
+real-time control: across ten measured ERCOT weeks under the stylized
+reserve settlement, the certified participant incurred zero violation
+episodes within its stated domain and zero delivery failures among
+certified starts, with residual failures inside the priced $\epsd$ budget,
+against $229$ violation day-seeds for the uncertified envelope; ablations
+show the nested sets and the hour-energy row are each necessary for this
+combination. Day-ahead workload
 information raised the certifiable offer of a hall under a measured
 GPU-cluster workload by $83\%$, and scarcity-week value reached \$$97$/day
 per MW of IT load with no added hardware. Certified envelopes therefore turn

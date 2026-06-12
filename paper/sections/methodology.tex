@@ -189,16 +189,21 @@ Section~\ref{sec:experimental_evaluation}. Commitment hours are selected by
 value, and the validation therefore tests coverage on the \emph{selected}
 hours directly rather than assuming it transfers.
 
-The two consequences of uncertainty identified in
-Section~\ref{subsec:problem} have different stakes, so they receive
-\emph{different} sets:
+Calibration uses $k=80$ conditioning neighbors and $150$ calibration points
+per face, with hour-of-day features; the allocation $0.35/0.35/0.30$ across
+the (amplitude, energy, dew) faces is fixed a priori, the dew share
+reflecting the heavier-tailed NWP residuals. The two consequences of
+uncertainty identified in Section~\ref{subsec:problem} have different
+stakes, so they receive \emph{different} sets:
 \begin{equation}
 \Wsafe(c)=\mathcal{W}_{\epss}(c),\qquad
 \Wdel(c)=\mathcal{W}_{\epsd}(c)\subseteq\Wsafe(c).
 \label{eq:nested}
 \end{equation}
-The \emph{safety set} uses a small, fixed $\epss$ ($0.05$ here) and is never
-traded for revenue. The level $\epsd$ of the delivery set is a \emph{product
+Note the direction of the nesting: the \emph{smaller} miscoverage $\epss$
+yields the \emph{wider} set, so $\Wdel\subseteq\Wsafe$ because
+$\epsd>\epss$. The \emph{safety set} uses a small, fixed $\epss$ ($0.05$
+here) and is never traded for revenue. The level $\epsd$ of the delivery set is a \emph{product
 design variable} ($0.3$ at the design point): delivery failures beyond
 $\Wdel$ are priced by the $\gamma$-penalty of \eqref{eq:settlement}, so
 $\epsd$ trades certified depth against expected penalty and the offering

@@ -223,10 +223,18 @@ minutes within the hour}. The duration $d\in\{15,30,60\}$\,min is a product
 parameter fixed per market (we evaluate $d=30$); activation is an exogenous
 Bernoulli draw with probability $p_{\mathrm{act}}$ per committed hour, and an
 activated hour exercises the full window, $r_h = d/60$ (idle hours have
-$r_h=0$). The market interval is $\dH = 1$\,h. The product is stylized: it maps loosely onto
-short-duration reserve and emergency products without encoding any single
-tariff, and it is the only institutional element in the model; all other
-market realism enters through data. Hour $h$ settles on metered energy
+$r_h=0$). The market interval is $\dH = 1$\,h.
+
+\begin{remark}[Market realism]\label{rem:market}
+The product is a \emph{generic short-duration reserve abstraction} and the
+only institutional element in the model. It does not claim to replicate any
+specific ERCOT service: qualification, telemetry, and performance rules of
+ECRS are not modeled; ECRS clearing prices serve as the capacity-price
+stream, and $p_{\mathrm{act}}$ and $\gamma$ are product design parameters
+whose sensitivity Section~\ref{subsec:cert} reports. Economic results are
+stated \emph{under this ERCOT-price-driven stylized settlement}, not as
+realized revenues of an enrolled participant.
+\end{remark} Hour $h$ settles on metered energy
 against the baseline:
 \begin{equation}
 \begin{aligned}
