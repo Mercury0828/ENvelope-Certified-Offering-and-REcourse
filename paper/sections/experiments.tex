@@ -96,7 +96,7 @@ the proposed certified participant.}
 \label{tab:summary}
 \setlength{\tabcolsep}{4pt}
 \scriptsize
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrrrrrrr}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrrrrrrrr}
 \toprule
 \textbf{Block} & \textbf{Method}
 & \textbf{Revenue}
@@ -104,45 +104,48 @@ the proposed certified participant.}
 & \textbf{Penalty}
 & \textbf{$\Delta$Wear$^{\ddagger}$}
 & \textbf{Shortfall}
+& \textbf{Warm$^{\S}$}
 & \textbf{MV (\$/day)}
 & \textbf{Committed}
 & \textbf{Delivery}
 & \textbf{Violations:} \\
- & & (\$/day) & (\$/day) & (\$/day) & (\$/day) & (kWh/day) & mean $\pm$ std
- & (kW/day) & ratio & days (max K) \\
+ & & (\$/day) & (\$/day) & (\$/day) & (\$/day) & (kWh/day) & (/day)
+ & mean $\pm$ std & (kW/day) & ratio & days (max K) \\
 \midrule
 \multirow{6}{*}{Ten-week average}
-& Idle (B1)            & $0.00$  & $0.00$  & $0.00$  & $0.00$ (ref.) & $0.00$ & $0.0 \pm 0.0$    & $0$    & --     & 5 (0.25)$^{\dagger}$ \\
-& Det.\ envelope (B2)  & $37.24$ & $-1.05$ & $1.49$  & $+1.71$ & $5.52$ & $35.1 \pm 126.2$  & $388$  & $0.81$ & $229$ ($9.8$) \\
-& Sample approx.\ (B3) & $15.65$ & $-0.22$ & $0.25$  & $+0.69$ & $0.42$ & $14.9 \pm 63.0$  & $126$  & $0.96$ & $47$ ($4.9$) \\
-& \textbf{ENCORE (B4)} & $9.65$  & $-0.15$ & $0.17$  & $\mathbf{-0.98}$ & $0.30$ & $\mathbf{10.6 \pm 52.9}$ & $54$ & $0.93$
+& Idle (B1)            & $0.00$  & $0.00$  & $0.00$  & $0.00$ (ref.) & $0.00$ & $0.00$ & $0.0 \pm 0.0$    & $0$    & --     & 5 (0.25)$^{\dagger}$ \\
+& Det.\ envelope (B2)  & $37.24$ & $-1.05$ & $1.49$  & $+1.71$ & $5.52$ & $0.20$ & $35.1 \pm 126.2$  & $388$  & $0.81$ & $229$ ($9.8$) \\
+& Sample approx.\ (B3) & $15.65$ & $-0.22$ & $0.25$  & $+0.69$ & $0.42$ & $0.08$ & $14.9 \pm 63.0$  & $126$  & $0.96$ & $47$ ($4.9$) \\
+& \textbf{ENCORE (B4)} & $9.65$  & $-0.15$ & $0.17$  & $\mathbf{-0.98}$ & $0.30$ & $0.07$ & $\mathbf{10.6 \pm 52.9}$ & $54$ & $0.93$
   & $\mathbf{0}$ \textbf{in-dom.}, 10 bey.\ ($1.6$) \\
-& Battery (B5)         & $16.07$ & $0.00$  & $0.00$  & $0.00$  & $0.00$ & $6.5 \pm 47.8$   & $616$  & $1.00$ & $0$ ($0.0$) \\
-& Curtailment (B6)     & $29.14$ & $0.00$  & $0.00$  & $0.00$  & $0.00$ & $25.6 \pm 96.1$  & $333$  & $1.00$ & $0$ ($0.0$) \\
+& Battery (B5)         & $16.07$ & $0.00$  & $0.00$  & $0.00$  & $0.00$ & $0.00$ & $6.5 \pm 47.8$   & $616$  & $1.00$ & $0$ ($0.0$) \\
+& Curtailment (B6)     & $29.14$ & $0.00$  & $0.00$  & $0.00$  & $0.00$ & $0.00$ & $25.6 \pm 96.1$  & $333$  & $1.00$ & $0$ ($0.0$) \\
 \midrule
 \multirow{6}{*}{Scarcity week (Heather)}
-& Idle (B1)            & $0.00$   & $0.00$  & $0.00$   & $0.00$ (ref.) & $0.00$ & $0.0 \pm 0.0$     & $0$       & --     & $0$ ($0.0$) \\
-& Det.\ envelope (B2)  & $241.58$ & $-0.28$ & $11.78$  & $+8.16$ & $22.87$ & $221.9 \pm 337.5$ & $1{,}220$ & $0.77$ & $57$ ($9.0$) \\
-& Sample approx.\ (B3) & $112.67$ & $-0.23$ & $2.23$   & $-2.98$ & $3.04$ & $113.6 \pm 166.8$ & $541$     & $0.93$ & $15$ ($4.9$) \\
-& \textbf{ENCORE (B4)} & $91.92$  & $-0.17$ & $1.65$   & $\mathbf{-6.67}$ & $2.52$ & $\mathbf{97.1 \pm 140.4}$ & $414$ & $0.92$
+& Idle (B1)            & $0.00$   & $0.00$  & $0.00$   & $0.00$ (ref.) & $0.00$ & $0.00$ & $0.0 \pm 0.0$     & $0$       & --     & $0$ ($0.0$) \\
+& Det.\ envelope (B2)  & $241.58$ & $-0.28$ & $11.78$  & $+8.16$ & $22.87$ & $0.61$ & $221.9 \pm 337.5$ & $1{,}220$ & $0.77$ & $57$ ($9.0$) \\
+& Sample approx.\ (B3) & $112.67$ & $-0.23$ & $2.23$   & $-2.98$ & $3.04$ & $0.25$ & $113.6 \pm 166.8$ & $541$     & $0.93$ & $15$ ($4.9$) \\
+& \textbf{ENCORE (B4)} & $91.92$  & $-0.17$ & $1.65$   & $\mathbf{-6.67}$ & $2.52$ & $0.58$ & $\mathbf{97.1 \pm 140.4}$ & $414$ & $0.92$
   & $\mathbf{0}$ \textbf{in-dom.}, 5 bey.\ ($1.6$) \\
-& Battery (B5)         & $89.24$  & $0.00$  & $0.00$   & $0.00$  & $0.00$ & $76.5 \pm 126.4$  & $764$     & $1.00$ & $0$ ($0.0$) \\
-& Curtailment (B6)     & $176.20$ & $0.00$  & $0.00$   & $0.00$  & $0.00$ & $166.2 \pm 255.5$ & $871$     & $1.00$ & $0$ ($0.0$) \\
+& Battery (B5)         & $89.24$  & $0.00$  & $0.00$   & $0.00$  & $0.00$ & $0.00$ & $76.5 \pm 126.4$  & $764$     & $1.00$ & $0$ ($0.0$) \\
+& Curtailment (B6)     & $176.20$ & $0.00$  & $0.00$   & $0.00$  & $0.00$ & $0.00$ & $166.2 \pm 255.5$ & $871$     & $1.00$ & $0$ ($0.0$) \\
 \midrule
 \multirow{6}{*}{Shoulder week (April)}
-& Idle (B1)            & $0.00$ & $0.00$  & $0.00$ & $0.00$ (ref.) & $0.00$ & $0.0 \pm 0.0$   & $0$    & --     & $0$ ($0.0$) \\
-& Det.\ envelope (B2)  & $9.61$ & $-1.81$ & $0.20$ & $+0.75$ & $3.21$ & $10.5 \pm 13.3$ & $296$  & $0.85$ & $16$ ($6.3$) \\
-& Sample approx.\ (B3) & $3.97$ & $-1.30$ & $0.00$ & $+0.01$ & $0.05$ & $5.3 \pm 8.4$   & $112$  & $0.99$ & $2$ ($1.4$) \\
-& \textbf{ENCORE (B4)} & $1.62$ & $-1.25$ & $0.01$ & $\mathbf{-1.26}$ & $0.11$ & $\mathbf{4.1 \pm 6.4}$ & $52$ & $0.97$
+& Idle (B1)            & $0.00$ & $0.00$  & $0.00$ & $0.00$ (ref.) & $0.00$ & $0.00$ & $0.0 \pm 0.0$   & $0$    & --     & $0$ ($0.0$) \\
+& Det.\ envelope (B2)  & $9.61$ & $-1.81$ & $0.20$ & $+0.75$ & $3.21$ & $0.16$ & $10.5 \pm 13.3$ & $296$  & $0.85$ & $16$ ($6.3$) \\
+& Sample approx.\ (B3) & $3.97$ & $-1.30$ & $0.00$ & $+0.01$ & $0.05$ & $0.09$ & $5.3 \pm 8.4$   & $112$  & $0.99$ & $2$ ($1.4$) \\
+& \textbf{ENCORE (B4)} & $1.62$ & $-1.25$ & $0.01$ & $\mathbf{-1.26}$ & $0.11$ & $0.07$ & $\mathbf{4.1 \pm 6.4}$ & $52$ & $0.97$
   & $\mathbf{0}$ ($0.0$) \\
-& Battery (B5)         & $5.03$ & $0.00$  & $0.00$ & $0.00$  & $0.00$ & $-4.2 \pm 3.3$  & $807$  & $1.00$ & $0$ ($0.0$) \\
-& Curtailment (B6)     & $6.57$ & $0.00$  & $0.00$ & $0.00$  & $0.00$ & $4.5 \pm 6.3$   & $200$  & $1.00$ & $0$ ($0.0$) \\
+& Battery (B5)         & $5.03$ & $0.00$  & $0.00$ & $0.00$  & $0.00$ & $0.00$ & $-4.2 \pm 3.3$  & $807$  & $1.00$ & $0$ ($0.0$) \\
+& Curtailment (B6)     & $6.57$ & $0.00$  & $0.00$ & $0.00$  & $0.00$ & $0.00$ & $4.5 \pm 6.3$   & $200$  & $1.00$ & $0$ ($0.0$) \\
 \bottomrule
-\multicolumn{11}{l}{\footnotesize $^{\dagger}$Exogenous summer workload-tail
+\multicolumn{12}{l}{\footnotesize $^{\dagger}$Exogenous summer workload-tail
 days exceeding the plant's sizing with no market participation; identical for
 B4. $^{\ddagger}$Degradation cost relative to Idle: negative means
 participation \emph{reduces} hotspot wear (the pre-cooled hours run colder
-than the nominal point).}
+than the nominal point). $^{\S}$Warm starts: activated obligations beginning
+at the envelope boundary (\S\ref{subsec:cert}); zero for participants without
+thermal events.}
 \end{tabular*}
 \vspace{-5mm}
 \end{table*}
