@@ -95,3 +95,5 @@ Declined/deferred: robust-MPC/DRO offering as full baselines (the single-set
    same MPC machinery — stated in IV-A); per-season coverage table (selected-
    hour validation is what the certificate gates; noted).
 Final: 12 phys. pages (~11.4 content) per relaxed budget; suite 51/51.
+
+## Baseline restructuring (owner, 2026-06-11): B7 single-risk robust + B8 context-free promoted into Table III with full 20-seed/3-block statistics (mainline_b7b8.csv); ablation table kept at 5 rows with cross-reference footnote; B2 = online-MPC-without-envelope mapping and B7 = robust-MPC/DRO-family proxy stated in IV-A; table footnotes moved outside tabular (fixed 761pt natural-width overflow).

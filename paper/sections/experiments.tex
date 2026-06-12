@@ -1,4 +1,4 @@
-% =====================================================================
+﻿% =====================================================================
 % SECTION IV -- EXPERIMENTAL EVALUATION (style mirrors companion paper)
 % =====================================================================
 \section{Experimental Evaluation}
@@ -62,8 +62,8 @@ calls, and every figure and table regenerates from committed configurations
 and seeds by a single \texttt{make figures}.\footnote{Code, configurations,
 and data-processing scripts will be released upon publication.}
 
-Six participants are compared, spanning uncertified, stochastic, certified,
-and alternative-resource designs:
+Eight participants are compared, spanning uncertified, stochastic,
+certified, single-risk robust, and alternative-resource designs:
 \begin{enumerate}
 \item \textbf{Idle}: the non-participating plant (B1); its trajectory defines
 the baseline and absorbs workload-tail days that no market action causes.
@@ -79,9 +79,21 @@ the same product; its value is reported before capital cost
 (${\sim}\$400$/kWh).
 \item \textbf{Curtailment} (B6): workload curtailment priced at a
 quality-of-service cost.
+\item \textbf{Single-risk robust} (B7): offers from a conformal envelope
+robustified at one risk level ($\varepsilon=0.05$ everywhere) --- the
+certificate-level equivalent of robust-MPC reserve
+offering~\cite{vrettos2016robust} and of single-radius distributionally
+robust offering: one data-driven set, one budget for both safety and
+delivery.
+\item \textbf{Context-free robust} (B8): the nested construction with
+context-independent sets (worst hour-of-day boxes), isolating the value of
+conditioning.
 \end{enumerate}
-B2--B4 share the offering objective, settlement, and real-time machinery;
-they differ only in the envelope they trust.
+B2--B4 and B7--B8 share the offering objective, settlement, and real-time
+machinery; they differ only in the envelope they trust. B2 also realizes
+the ``online MPC with safety constraints but no offline envelope''
+alternative: it runs the same safety-constrained rolling controller and
+differs from ENCORE only in offering the untightened $F$.
 
 % --------------------------- TABLE II --------------------------------
 \begin{table*}[t]
@@ -96,7 +108,8 @@ the proposed certified participant.}
 \label{tab:summary}
 \setlength{\tabcolsep}{4pt}
 \scriptsize
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}llrrrrrrrrrr}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrrrrrrr}
 \toprule
 \textbf{Block} & \textbf{Method}
 & \textbf{Revenue}
@@ -112,41 +125,47 @@ the proposed certified participant.}
  & & (\$/day) & (\$/day) & (\$/day) & (\$/day) & (kWh/day) & (/day)
  & mean $\pm$ std & (kW/day) & ratio & days (max K) \\
 \midrule
-\multirow{6}{*}{Ten-week average}
-& Idle (B1)            & $0.00$  & $0.00$  & $0.00$  & $0.00$ (ref.) & $0.00$ & $0.00$ & $0.0 \pm 0.0$    & $0$    & --     & 5 (0.25)$^{\dagger}$ \\
-& Det.\ envelope (B2)  & $37.24$ & $-1.05$ & $1.49$  & $+1.71$ & $5.52$ & $0.20$ & $35.1 \pm 126.2$  & $388$  & $0.81$ & $229$ ($9.8$) \\
-& Sample approx.\ (B3) & $15.65$ & $-0.22$ & $0.25$  & $+0.69$ & $0.42$ & $0.08$ & $14.9 \pm 63.0$  & $126$  & $0.96$ & $47$ ($4.9$) \\
+\multirow{8}{*}{Ten-week avg.}
+& Idle (B1)            & $0.00$  & $0.00$  & $0.00$  & ref. & $0.00$ & $0.00$ & $0.0 \pm 0.0$    & $0$    & --     & 5 (0.25)$^{\dagger}$ \\
+& Det.\ env.\ (B2)  & $37.24$ & $-1.05$ & $1.49$  & $+1.71$ & $5.52$ & $0.20$ & $35.1 \pm 126.2$  & $388$  & $0.81$ & $229$ ($9.8$) \\
+& Sample apx.\ (B3) & $15.65$ & $-0.22$ & $0.25$  & $+0.69$ & $0.42$ & $0.08$ & $14.9 \pm 63.0$  & $126$  & $0.96$ & $47$ ($4.9$) \\
 & \textbf{ENCORE (B4)} & $9.65$  & $-0.15$ & $0.17$  & $\mathbf{-0.98}$ & $0.30$ & $0.07$ & $\mathbf{10.6 \pm 52.9}$ & $54$ & $0.93$
   & $\mathbf{0}$ \textbf{in-dom.}, 10 bey.\ ($1.6$) \\
 & Battery (B5)         & $16.07$ & $0.00$  & $0.00$  & $0.00$  & $0.00$ & $0.00$ & $6.5 \pm 47.8$   & $616$  & $1.00$ & $0$ ($0.0$) \\
 & Curtailment (B6)     & $29.14$ & $0.00$  & $0.00$  & $0.00$  & $0.00$ & $0.00$ & $25.6 \pm 96.1$  & $333$  & $1.00$ & $0$ ($0.0$) \\
+& Single-risk (B7) & $7.46$ & $0.12$ & $0.09$  & $-1.09$ & $0.13$ & $0.07$ & $8.3 \pm 41.0$   & $37$   & $0.96$ & $10$ ($1.9$) \\
+& Context-free (B8)    & $7.17$  & $-0.07$ & $0.10$  & $-0.63$ & $0.15$ & $0.06$ & $7.8 \pm 41.4$   & $40$   & $0.94$ & $8$ ($0.7$) \\
 \midrule
-\multirow{6}{*}{Scarcity week (Heather)}
-& Idle (B1)            & $0.00$   & $0.00$  & $0.00$   & $0.00$ (ref.) & $0.00$ & $0.00$ & $0.0 \pm 0.0$     & $0$       & --     & $0$ ($0.0$) \\
-& Det.\ envelope (B2)  & $241.58$ & $-0.28$ & $11.78$  & $+8.16$ & $22.87$ & $0.61$ & $221.9 \pm 337.5$ & $1{,}220$ & $0.77$ & $57$ ($9.0$) \\
-& Sample approx.\ (B3) & $112.67$ & $-0.23$ & $2.23$   & $-2.98$ & $3.04$ & $0.25$ & $113.6 \pm 166.8$ & $541$     & $0.93$ & $15$ ($4.9$) \\
+\multirow{8}{*}{Scarcity week (Heather)}
+& Idle (B1)            & $0.00$   & $0.00$  & $0.00$   & ref. & $0.00$ & $0.00$ & $0.0 \pm 0.0$     & $0$       & --     & $0$ ($0.0$) \\
+& Det.\ env.\ (B2)  & $241.58$ & $-0.28$ & $11.78$  & $+8.16$ & $22.87$ & $0.61$ & $221.9 \pm 337.5$ & $1{,}220$ & $0.77$ & $57$ ($9.0$) \\
+& Sample apx.\ (B3) & $112.67$ & $-0.23$ & $2.23$   & $-2.98$ & $3.04$ & $0.25$ & $113.6 \pm 166.8$ & $541$     & $0.93$ & $15$ ($4.9$) \\
 & \textbf{ENCORE (B4)} & $91.92$  & $-0.17$ & $1.65$   & $\mathbf{-6.67}$ & $2.52$ & $0.58$ & $\mathbf{97.1 \pm 140.4}$ & $414$ & $0.92$
   & $\mathbf{0}$ \textbf{in-dom.}, 5 bey.\ ($1.6$) \\
 & Battery (B5)         & $89.24$  & $0.00$  & $0.00$   & $0.00$  & $0.00$ & $0.00$ & $76.5 \pm 126.4$  & $764$     & $1.00$ & $0$ ($0.0$) \\
 & Curtailment (B6)     & $176.20$ & $0.00$  & $0.00$   & $0.00$  & $0.00$ & $0.00$ & $166.2 \pm 255.5$ & $871$     & $1.00$ & $0$ ($0.0$) \\
+& Single-risk (B7) & $71.92$ & $2.65$ & $0.88$   & $-7.61$ & $1.29$ & $0.54$ & $76.0 \pm 108.3$  & $301$     & $0.94$ & $5$ ($1.9$) \\
+& Context-free (B8)    & $68.45$  & $-0.20$ & $1.03$   & $-8.00$ & $1.32$ & $0.49$ & $75.6 \pm 109.7$  & $306$     & $0.93$ & $3$ ($0.7$) \\
 \midrule
-\multirow{6}{*}{Shoulder week (April)}
-& Idle (B1)            & $0.00$ & $0.00$  & $0.00$ & $0.00$ (ref.) & $0.00$ & $0.00$ & $0.0 \pm 0.0$   & $0$    & --     & $0$ ($0.0$) \\
-& Det.\ envelope (B2)  & $9.61$ & $-1.81$ & $0.20$ & $+0.75$ & $3.21$ & $0.16$ & $10.5 \pm 13.3$ & $296$  & $0.85$ & $16$ ($6.3$) \\
-& Sample approx.\ (B3) & $3.97$ & $-1.30$ & $0.00$ & $+0.01$ & $0.05$ & $0.09$ & $5.3 \pm 8.4$   & $112$  & $0.99$ & $2$ ($1.4$) \\
+\multirow{8}{*}{Shoulder week (April)}
+& Idle (B1)            & $0.00$ & $0.00$  & $0.00$ & ref. & $0.00$ & $0.00$ & $0.0 \pm 0.0$   & $0$    & --     & $0$ ($0.0$) \\
+& Det.\ env.\ (B2)  & $9.61$ & $-1.81$ & $0.20$ & $+0.75$ & $3.21$ & $0.16$ & $10.5 \pm 13.3$ & $296$  & $0.85$ & $16$ ($6.3$) \\
+& Sample apx.\ (B3) & $3.97$ & $-1.30$ & $0.00$ & $+0.01$ & $0.05$ & $0.09$ & $5.3 \pm 8.4$   & $112$  & $0.99$ & $2$ ($1.4$) \\
 & \textbf{ENCORE (B4)} & $1.62$ & $-1.25$ & $0.01$ & $\mathbf{-1.26}$ & $0.11$ & $0.07$ & $\mathbf{4.1 \pm 6.4}$ & $52$ & $0.97$
   & $\mathbf{0}$ ($0.0$) \\
 & Battery (B5)         & $5.03$ & $0.00$  & $0.00$ & $0.00$  & $0.00$ & $0.00$ & $-4.2 \pm 3.3$  & $807$  & $1.00$ & $0$ ($0.0$) \\
 & Curtailment (B6)     & $6.57$ & $0.00$  & $0.00$ & $0.00$  & $0.00$ & $0.00$ & $4.5 \pm 6.3$   & $200$  & $1.00$ & $0$ ($0.0$) \\
+& Single-risk (B7) & $0.94$ & $-1.34$ & $0.00$ & $-1.36$ & $0.00$ & $0.07$ & $3.6 \pm 5.6$  & $30$   & $1.00$ & $0$ ($0.0$) \\
+& Context-free (B8)    & $1.32$ & $-1.24$ & $0.00$ & $-1.09$ & $0.00$ & $0.07$ & $3.7 \pm 6.1$   & $42$   & $1.00$ & $0$ ($0.0$) \\
 \bottomrule
-\multicolumn{12}{l}{\footnotesize $^{\dagger}$Exogenous summer workload-tail
-days exceeding the plant's sizing with no market participation; identical for
-B4. $^{\ddagger}$Degradation cost relative to Idle: negative means
+\end{tabular}}\\[1pt]
+\parbox{\textwidth}{\scriptsize $^{\dagger}$Exogenous summer workload-tail
+days exceeding the plant's sizing with no market participation; identical
+for B4. $^{\ddagger}$Degradation cost relative to Idle: negative means
 participation \emph{reduces} hotspot wear (the pre-cooled hours run colder
 than the nominal point). $^{\S}$Warm starts: activated obligations beginning
-at the envelope boundary (\S\ref{subsec:cert}); zero for participants without
-thermal events.}
-\end{tabular*}
+at the envelope boundary (\S\ref{subsec:cert}); zero for participants
+without thermal events.}
 \vspace{-5mm}
 \end{table*}
 
@@ -268,11 +287,17 @@ are portfolio complements; only the cooling loop requires neither new
 hardware nor workload sacrifice, and its marginal cost is priced thermal
 wear.
 
-A fourth observation comes free in the wear column: ENCORE's
-$\Delta$Wear is \emph{negative} in every block --- the pre-cooled ready
-hours run colder than the nominal operating point, so certified
-participation slightly extends silicon life while monetizing flexibility,
-whereas the uncertified envelope adds wear on top of its violations.
+Two further observations come from the new rows. The single-risk robust
+family (B7), the certificate-level stand-in for robust-MPC reserve offering
+and single-radius distributionally robust offering, is safe but forfeits
+$21\%$ of the nested value on the ten-week average: one budget cannot price
+safety and delivery separately. The context-free variant (B8) forfeits
+$27\%$: the value of conditioning on hour-of-day and the dew forecast.
+Finally, the wear column: ENCORE's $\Delta$Wear is \emph{negative} in every
+block --- the pre-cooled ready hours run colder than the nominal operating
+point, so certified participation slightly extends silicon life while
+monetizing flexibility, whereas the uncertified envelope adds wear on top
+of its violations.
 
 \begin{figure}[t]
 \centering
@@ -418,15 +443,15 @@ worst-case excursion, total shortfall, and penalty per day).}
 & \textbf{Shortfall (kWh)} & \textbf{Penalty (\$)} \\
 \midrule
 \multirow{2}{*}{All-hours bursts}
-& Det.\ envelope (B2) & $6.92$ & $60.1$ & $15.76$ \\
+& Det.\ env.\ (B2) & $6.92$ & $60.1$ & $15.76$ \\
 & \textbf{ENCORE (B4)} & $\mathbf{2.20}$ & $\mathbf{13.8}$ & $\mathbf{5.02}$ \\
 \midrule
 \multirow{2}{*}{$+3$\,K dew shift}
-& Det.\ envelope (B2) & $4.25$ & $72.5$ & $17.10$ \\
+& Det.\ env.\ (B2) & $4.25$ & $72.5$ & $17.10$ \\
 & \textbf{ENCORE (B4)} & $\mathbf{0.00}$ & $\mathbf{2.9}$ & $\mathbf{0.29}$ \\
 \midrule
 \multirow{2}{*}{Six consecutive calls}
-& Det.\ envelope (B2) & $5.05$ & $154.7$ & $45.95$ \\
+& Det.\ env.\ (B2) & $5.05$ & $154.7$ & $45.95$ \\
 & \textbf{ENCORE (B4)} & $\mathbf{0.00}$ & $\mathbf{19.5}$ & $\mathbf{10.35}$ \\
 \bottomrule
 \end{tabular}
@@ -437,26 +462,27 @@ worst-case excursion, total shortfall, and penalty per day).}
 \subsection{Ablations and Model Sensitivity}
 \label{subsec:ablation}
 
-Table~\ref{tab:ablation} isolates the two design choices that carry
-Theorem~\ref{thm:main}, replaying the ten weeks for four ablated variants.
-Replacing the nested sets by a \emph{single} set at $\epsd=0.3$ monetizes
-$47\%$ more but erodes exactly what the construction protects: $18$
-violation day-seeds up to $4.9$\,K, because loosening the delivery budget
-also shrank the set on which safety is certified. A single set at
-$\epss=0.05$ is safe but forfeits $20\%$ of the nested value: one knob
-cannot price two risks. Removing the hour-energy row (window-only
-certification) is the only variant that \emph{breaks} the certificate ---
-three clean-in-box failures and an $82\%$ failure rate --- confirming that
-whole-hour settlement, not window depth, is the binding promise. The
-context-free variant loses $24\%$ of the value, the price of ignoring the
-weather and workload conditioning. The nested design is the only variant
-with zero certificate breaks, bounded excursions, and competitive value.
+Table~\ref{tab:ablation} isolates the design choices that carry
+Theorem~\ref{thm:main}, replaying the ten weeks for four ablated variants
+under one shared protocol. Replacing the nested sets by a \emph{single} set
+at $\epsd=0.3$ monetizes $47\%$ more but erodes exactly what the
+construction protects: $18$ violation day-seeds up to $4.9$\,K, because
+loosening the delivery budget also shrank the set on which safety is
+certified. Removing the hour-energy row (window-only certification) is the
+only variant that \emph{breaks} the certificate --- three clean-in-box
+failures and an $82\%$ failure rate --- confirming that whole-hour
+settlement, not window depth, is the binding promise. The two remaining
+rows are the same designs promoted to full statistics as B7 and B8 in
+Table~\ref{tab:summary}. The nested design is the only variant with zero
+certificate breaks, bounded excursions, and competitive value.
 
 \begin{table}[t]
 \centering
-\caption{Ablations over the ten held-out weeks (nested: $20$ seeds; ablated
-variants: $5$ seeds). CIB: clean-in-box delivery failures (certificate
-breaks).}
+\caption{Component ablations over the ten held-out weeks under one shared
+protocol (nested: $20$ seeds; ablated variants: $5$ seeds). CIB:
+clean-in-box delivery failures (certificate breaks). The single-$0.05$ and
+context-free rows correspond to B7/B8 of Table~\ref{tab:summary}, where
+they appear with full $20$-seed statistics.}
 \label{tab:ablation}
 \setlength{\tabcolsep}{2.6pt}
 \scriptsize
